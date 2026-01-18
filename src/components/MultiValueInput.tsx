@@ -15,12 +15,14 @@ export function MultiValueInput({
                                     values,
                                     suggestions,
                                     onChange,
+                                    dense = false,
                                 }: {
     label: string;
     placeholder?: string;
     values: string[];
     suggestions: string[];
     onChange: (next: string[]) => void;
+    dense?: boolean;
 }) {
     const [q, setQ] = useState("");
     const [open, setOpen] = useState(false);
@@ -52,22 +54,23 @@ export function MultiValueInput({
 
     return (
         <div
-            className="space-y-2"
+            className={dense ? "space-y-1.5" : "space-y-2"}
             ref={rootRef}
             onBlur={(e) => {
-                // закрыть dropdown, если фокус ушёл наружу
                 const next = e.relatedTarget as Node | null;
                 if (next && rootRef.current?.contains(next)) return;
                 setOpen(false);
             }}
         >
-            <div className="text-sm font-medium">{label}</div>
+            <div className={cn(dense ? "text-xs font-medium text-muted-foreground" : "text-sm font-medium")}>
+                {label}
+            </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className={cn("flex flex-wrap items-center", dense ? "gap-1.5" : "gap-2")}>
                 {values.map((v) => (
                     <div key={v} className="flex items-center gap-1">
-                        <Badge className="gap-1">
-                            <span className="max-w-[220px] truncate">{v}</span>
+                        <Badge className={cn("gap-1", dense && "px-1.5 py-0 text-[11px]")}>
+                            <span className={cn("truncate", dense ? "max-w-[180px]" : "max-w-[220px]")}>{v}</span>
                             <button
                                 type="button"
                                 className="ml-1 rounded hover:opacity-80"
@@ -82,7 +85,7 @@ export function MultiValueInput({
             </div>
 
             <div className="relative">
-                <div className="flex gap-2">
+                <div className={cn("flex", dense ? "gap-1.5" : "gap-2")}>
                     <Input
                         value={q}
                         placeholder={placeholder}
@@ -98,18 +101,20 @@ export function MultiValueInput({
                             }
                             if (e.key === "Escape") setOpen(false);
                         }}
+                        className={dense ? "h-8 text-sm" : undefined}
                     />
-                    <Button type="button" variant="secondary" onClick={() => addValue(q)}>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        size={dense ? "sm" : "default"}
+                        onClick={() => addValue(q)}
+                    >
                         Добавить
                     </Button>
                 </div>
 
                 {open && (filtered.length > 0 || q.trim()) && (
-                    <div
-                        className={cn(
-                            "absolute z-10 mt-2 w-full rounded-md border bg-popover text-popover-foreground shadow-md"
-                        )}
-                    >
+                    <div className="absolute z-10 mt-2 w-full rounded-md border bg-popover text-popover-foreground shadow-md">
                         <div className="max-h-56 overflow-auto p-1">
                             {filtered.map((s) => (
                                 <button

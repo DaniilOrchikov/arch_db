@@ -27,18 +27,12 @@ export function ObjectsPage({
     setOpenId: (id: string | null) => void;
     onChangeItems: (next: ArchitectureObject[]) => void;
 }) {
-    const tagSuggestions = useMemo(
-        () => uniqSorted(items.flatMap((i) => i.tags)),
-        [items]
-    );
+    const tagSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.tags)), [items]);
     const architectSuggestions = useMemo(
         () => uniqSorted(items.flatMap((i) => i.architects)),
         [items]
     );
-    const styleSuggestions = useMemo(
-        () => uniqSorted(items.flatMap((i) => i.styles)),
-        [items]
-    );
+    const styleSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.styles)), [items]);
 
     const dupMap = useMemo(() => {
         const m = new Map<string, number>();
@@ -50,14 +44,13 @@ export function ObjectsPage({
         return m;
     }, [items]);
 
+    const openItem = openId ? items.find((x) => x.id === openId) ?? null : null;
+    const collapsedItems = openItem ? items.filter((x) => x.id !== openItem.id) : items;
+
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <div className="text-lg font-semibold">Просмотр и создание объектов</div>
-                    <div className="text-sm text-muted-foreground">
-                        Карточки раскрываются по клику, редактирование — прямо в тексте.
-                    </div>
                 </div>
 
                 <Button
@@ -87,9 +80,32 @@ export function ObjectsPage({
                 </Button>
             </div>
 
-            <div className="space-y-3">
-                {items.map((it) => {
-                    const isOpen = openId === it.id;
+            {openItem && (
+                <div className="space-y-3">
+                    <ObjectCard
+                        workspace={workspace}
+                        item={openItem}
+                        open={true}
+                        onToggle={() => setOpenId(null)}
+                        onChange={(next) => onChangeItems(items.map((x) => (x.id === openItem.id ? next : x)))}
+                        onDelete={() => {
+                            const next = items.filter((x) => x.id !== openItem.id);
+                            onChangeItems(next);
+                            setOpenId(null);
+                        }}
+                        tagSuggestions={tagSuggestions}
+                        architectSuggestions={architectSuggestions}
+                        styleSuggestions={styleSuggestions}
+                        hasDuplicateName={() => {
+                            const key = norm(openItem.name);
+                            return key ? (dupMap.get(key) ?? 0) > 1 : false;
+                        }}
+                    />
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                {collapsedItems.map((it) => {
                     const key = norm(it.name);
                     const hasDuplicateName = key ? (dupMap.get(key) ?? 0) > 1 : false;
 
@@ -98,11 +114,9 @@ export function ObjectsPage({
                             key={it.id}
                             workspace={workspace}
                             item={it}
-                            open={isOpen}
-                            onToggle={() => setOpenId(isOpen ? null : it.id)}
-                            onChange={(next) => {
-                                onChangeItems(items.map((x) => (x.id === it.id ? next : x)));
-                            }}
+                            open={false}
+                            onToggle={() => setOpenId(it.id)}
+                            onChange={(next) => onChangeItems(items.map((x) => (x.id === it.id ? next : x)))}
                             onDelete={() => {
                                 const next = items.filter((x) => x.id !== it.id);
                                 onChangeItems(next);

@@ -34,3 +34,13 @@ export async function readWorkspaceFile(
     const fh = await d.getFileHandle(name);
     return await fh.getFile();
 }
+
+export async function deleteWorkspaceFile(
+    workspace: FileSystemDirectoryHandle,
+    relativePath: string
+) {
+    const [dir, name] = relativePath.split("/");
+    if (!dir || !name) throw new Error("Bad relativePath");
+    const d = await workspace.getDirectoryHandle(dir);
+    await d.removeEntry(name);
+}

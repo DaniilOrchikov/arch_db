@@ -130,7 +130,7 @@ export default function App() {
                                     setStatus({ kind: "saved", message: "Workspace подключен." });
                                 }}
                             >
-                                Выбрать папку базы (workspace)
+                                Выбрать папку БД
                             </Button>
 
                             <div className="text-sm text-muted-foreground">

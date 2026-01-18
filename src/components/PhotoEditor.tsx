@@ -2,8 +2,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Photo } from "../lib/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { readWorkspaceFile, saveImageFileToWorkspace } from "../lib/photos";
-import { ChevronLeft, ChevronRight, Trash2, ArrowLeft, ArrowRight, Upload } from "lucide-react";
+import { readWorkspaceFile, saveImageFileToWorkspace, deleteWorkspaceFile } from "../lib/photos";
+import { Trash2, Upload } from "lucide-react";
+import { cn } from "../lib/utils";
+import {
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    DialogDescription,
+} from "./ui/dialog";
 
 type ResolvedPhoto = { src: string; revoke?: () => void };
 
@@ -27,146 +34,179 @@ export function PhotoEditor({
     photos: Photo[];
     onChange: (next: Photo[]) => void;
 }) {
-    const [idx, setIdx] = useState(0);
     const [url, setUrl] = useState("");
-    const [resolved, setResolved] = useState<ResolvedPhoto | null>(null);
     const fileRef = useRef<HTMLInputElement | null>(null);
+
+    const [resolvedList, setResolvedList] = useState<ResolvedPhoto[]>([]);
+    const prevResolvedRef = useRef<ResolvedPhoto[]>([]);
+
+    const [viewerOpen, setViewerOpen] = useState(false);
+    const [activeIdx, setActiveIdx] = useState<number>(0);
 
     useEffect(() => {
         let alive = true;
+
         (async () => {
-            if (!photos.length) {
-                if (resolved?.revoke) resolved.revoke();
-                setResolved(null);
-                return;
-            }
-            const p = photos[Math.min(idx, photos.length - 1)];
-            const r = await resolvePhoto(workspace, p);
+            const res = await Promise.all(photos.map((p) => resolvePhoto(workspace, p)));
+
             if (!alive) {
-                r.revoke?.();
+                res.forEach((r) => r.revoke?.());
                 return;
             }
-            if (resolved?.revoke) resolved.revoke();
-            setResolved(r);
+
+            prevResolvedRef.current.forEach((r) => r.revoke?.());
+            prevResolvedRef.current = res;
+            setResolvedList(res);
         })();
+
         return () => {
             alive = false;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [idx, photos, workspace]);
+    }, [photos, workspace]);
 
     useEffect(() => {
-        if (idx > photos.length - 1) setIdx(Math.max(0, photos.length - 1));
-    }, [idx, photos.length]);
+        return () => {
+            prevResolvedRef.current.forEach((r) => r.revoke?.());
+        };
+    }, []);
 
-    const canPrev = idx > 0;
-    const canNext = idx < photos.length - 1;
+    useEffect(() => {
+        // если удалили фото, которое было открыто — поправим индекс/закроем
+        if (!photos.length) {
+            setViewerOpen(false);
+            setActiveIdx(0);
+            return;
+        }
+        if (activeIdx > photos.length - 1) setActiveIdx(photos.length - 1);
+    }, [photos.length, activeIdx]);
 
-    const current = useMemo(() => photos[idx], [photos, idx]);
+    const active = useMemo(() => photos[activeIdx], [photos, activeIdx]);
+    const activeSrc = resolvedList[activeIdx]?.src ?? "";
 
     return (
         <div className="space-y-3">
             <div className="text-sm font-medium">Фотографии</div>
 
-            <div className="rounded-md border bg-card overflow-hidden">
-                <div className="flex items-center justify-between p-2 border-b">
-                    <div className="text-sm text-muted-foreground">
-                        {photos.length ? `Фото ${idx + 1} из ${photos.length}` : "Нет фотографий"}
+            {/* Pinterest-like лента */}
+            <div className="rounded-md border bg-card p-3">
+                {photos.length ? (
+                    <div className="columns-2 md:columns-3 xl:columns-4 gap-3">
+                        {photos.map((p, i) => {
+                            const r = resolvedList[i];
+                            const src = r?.src ?? "";
+                            const key = `${p.type}:${p.value}:${i}`;
+
+                            return (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    className={cn(
+                                        "mb-3 w-full overflow-hidden rounded-md border bg-muted text-left",
+                                        "break-inside-avoid",
+                                        "hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    )}
+                                    onClick={() => {
+                                        setActiveIdx(i);
+                                        setViewerOpen(true);
+                                    }}
+                                    aria-label={`open-photo-${i + 1}`}
+                                >
+                                    {src ? (
+                                        <img
+                                            src={src}
+                                            alt=""
+                                            className="w-full h-auto object-cover"
+                                            loading="lazy"
+                                        />
+                                    ) : (
+                                        <div className="aspect-[4/3] w-full bg-gradient-to-br from-muted to-background" />
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            disabled={!photos.length || !canPrev}
-                            onClick={() => setIdx((x) => Math.max(0, x - 1))}
-                            aria-label="prev"
-                        >
-                            <ChevronLeft size={16} />
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            disabled={!photos.length || !canNext}
-                            onClick={() => setIdx((x) => Math.min(photos.length - 1, x + 1))}
-                            aria-label="next"
-                        >
-                            <ChevronRight size={16} />
-                        </Button>
-                    </div>
-                </div>
-
-                <div className="aspect-[16/9] bg-muted flex items-center justify-center">
-                    {photos.length && resolved?.src ? (
-                        <img
-                            src={resolved.src}
-                            alt=""
-                            className="h-full w-full object-contain bg-black/5"
-                        />
-                    ) : (
-                        <div className="text-sm text-muted-foreground">Добавьте фото (файл или URL)</div>
-                    )}
-                </div>
-
-                {photos.length > 0 && (
-                    <div className="p-2 border-t flex flex-wrap gap-2 items-center">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={idx === 0}
-                            onClick={() => {
-                                const next = [...photos];
-                                const t = next[idx - 1];
-                                next[idx - 1] = next[idx];
-                                next[idx] = t;
-                                onChange(next);
-                                setIdx((x) => x - 1);
-                            }}
-                        >
-                            <ArrowLeft size={16} />
-                            Влево
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={idx === photos.length - 1}
-                            onClick={() => {
-                                const next = [...photos];
-                                const t = next[idx + 1];
-                                next[idx + 1] = next[idx];
-                                next[idx] = t;
-                                onChange(next);
-                                setIdx((x) => x + 1);
-                            }}
-                        >
-                            <ArrowRight size={16} />
-                            Вправо
-                        </Button>
-
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                                const next = photos.filter((_, i) => i !== idx);
-                                onChange(next);
-                                setIdx((x) => Math.max(0, Math.min(x, next.length - 1)));
-                            }}
-                        >
-                            <Trash2 size={16} />
-                            Удалить
-                        </Button>
-
-                        <div className="ml-auto text-xs text-muted-foreground">
-                            {current?.type === "file" ? current.value : current?.type === "url" ? "URL" : ""}
-                        </div>
+                ) : (
+                    <div className="rounded-md border bg-muted/30 p-6 text-sm text-muted-foreground">
+                        Добавьте фото (файл или URL)
                     </div>
                 )}
             </div>
 
+            {/* Fullscreen viewer */}
+            <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+                <DialogContent className="p-0 gap-0 w-screen h-[100dvh] max-w-none sm:rounded-none">
+                    {/* a11y (можно скрыть визуально, но пусть будет) */}
+                    <DialogTitle className="sr-only">Просмотр фото</DialogTitle>
+                    <DialogDescription className="sr-only">
+                        Полноэкранный просмотр изображения
+                    </DialogDescription>
+
+                    <div className="relative w-full h-[100dvh] bg-black">
+                        {/* верхняя панель */}
+                        <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-2 p-3 bg-gradient-to-b from-black/60 to-transparent">
+                            <div className="text-xs text-white/80">
+                                {photos.length ? `Фото ${activeIdx + 1} из ${photos.length}` : ""}
+                            </div>
+
+                            <div className="ml-auto flex items-center gap-2">
+                                {photos.length > 0 && (
+                                    <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={async () => {
+                                            const cur = photos[activeIdx];
+
+                                            if (cur?.type === "file" && workspace) {
+                                                await deleteWorkspaceFile(workspace, cur.value);
+                                            }
+
+                                            const next = photos.filter((_, i) => i !== activeIdx);
+                                            onChange(next);
+
+                                            if (next.length === 0) {
+                                                setViewerOpen(false);
+                                                setActiveIdx(0);
+                                            } else {
+                                                setActiveIdx((x) => Math.max(0, Math.min(x, next.length - 1)));
+                                            }
+                                        }}
+                                    >
+                                        <Trash2 size={16} />
+                                        Удалить
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* картинка */}
+                        <div className="w-full h-full flex items-center justify-center">
+                            {activeSrc ? (
+                                <img
+                                    src={activeSrc}
+                                    alt=""
+                                    className="max-w-full max-h-full object-contain"
+                                />
+                            ) : (
+                                <div className="text-sm text-white/70">Не удалось загрузить изображение</div>
+                            )}
+                        </div>
+
+                        {/* низ: подпись/источник (по желанию) */}
+                        <div className="absolute bottom-0 left-0 right-0 z-10 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                            <div className="text-xs text-white/70 truncate">
+                                {active?.type === "file"
+                                    ? active.value
+                                    : active?.type === "url"
+                                        ? active.value
+                                        : ""}
+                            </div>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Добавление URL / файла — оставляем как было */}
             <div className="grid grid-cols-1 gap-2">
                 <div className="flex gap-2">
                     <Input
@@ -180,7 +220,6 @@ export function PhotoEditor({
                                 if (!u) return;
                                 onChange([...photos, { type: "url", value: u }]);
                                 setUrl("");
-                                setIdx(photos.length);
                             }
                         }}
                     />
@@ -192,7 +231,6 @@ export function PhotoEditor({
                             if (!u) return;
                             onChange([...photos, { type: "url", value: u }]);
                             setUrl("");
-                            setIdx(photos.length);
                         }}
                     >
                         Добавить URL
@@ -216,7 +254,6 @@ export function PhotoEditor({
 
                             const rel = await saveImageFileToWorkspace(workspace, f);
                             onChange([...photos, { type: "file", value: rel }]);
-                            setIdx(photos.length);
                             e.currentTarget.value = "";
                         }}
                     />
