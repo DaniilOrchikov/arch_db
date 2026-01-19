@@ -67,7 +67,6 @@ export function Sidebar({
             <div className="mt-auto p-3 text-xs text-muted-foreground">
                 {!collapsed && (
                     <div>
-                        Без бэкенда. Хранение в `db.json` + `images/` через выбранную папку.
                     </div>
                 )}
             </div>

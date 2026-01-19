@@ -31,6 +31,9 @@ export function ObjectCard({
                                tagSuggestions,
                                architectSuggestions,
                                styleSuggestions,
+                               
+                               countrySuggestions,
+                               citySuggestions,
                                hasDuplicateName,
                            }: {
     workspace: FileSystemDirectoryHandle | null;
@@ -43,6 +46,9 @@ export function ObjectCard({
     tagSuggestions: string[];
     architectSuggestions: string[];
     styleSuggestions: string[];
+    
+    countrySuggestions: string[];
+    citySuggestions: string[];
     hasDuplicateName: boolean | (() => boolean);
 }) {
     const isDuplicate = typeof hasDuplicateName === "function" ? hasDuplicateName() : hasDuplicateName;
@@ -117,11 +123,21 @@ export function ObjectCard({
                         </div>
 
                         <div className="flex items-center justify-between gap-3">
-                            {/* Левая часть: теги, стили, архитекторы */}
+                            {/* Левая часть: теги, стили, архитекторы, страны, города */}
                             <div className="flex flex-wrap items-center gap-1.5 overflow-hidden min-w-0 flex-1">
                                 {stylePreview && (
                                     <Badge>{stylePreview}</Badge>
                                 )}
+                                {item.countries.slice(0, 2).map((c) => (
+                                    <Badge key={c}>
+                                        {c}
+                                    </Badge>
+                                ))}
+                                {item.cities.slice(0, 2).map((c) => (
+                                    <Badge key={c}>
+                                        {c}
+                                    </Badge>
+                                ))}
                                 {collapsedTags.map((t) => (
                                     <Badge key={t}>
                                         {t}
@@ -130,14 +146,16 @@ export function ObjectCard({
                                 {item.architects.slice(0, 2).map((arch) => (
                                     <Badge
                                         key={arch}
-                                        variant="outline"
                                     >
                                         {arch}
                                     </Badge>
                                 ))}
-                                {(item.architects.length > 2 || item.tags.length > 5) && (
+                                {(item.architects.length > 2 || item.tags.length > 5 || item.countries.length > 2 || item.cities.length > 2) && (
                                     <Badge variant="secondary">
-                                        +{Math.max(item.tags.length - 5, 0) + Math.max(item.architects.length - 2, 0)}
+                                        +{Math.max(item.tags.length - 5, 0) +
+                                        Math.max(item.architects.length - 2, 0) +
+                                        Math.max(item.countries.length - 2, 0) +
+                                        Math.max(item.cities.length - 2, 0)}
                                     </Badge>
                                 )}
                             </div>
@@ -221,8 +239,7 @@ export function ObjectCard({
                         </div>
                     </div>
 
-                    {/* Компактный блок: архитекторы/стили/теги */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
                         <MultiValueInput
                             dense
                             label="Архитекторы"
@@ -248,6 +265,22 @@ export function ObjectCard({
                             values={item.tags}
                             suggestions={tagSuggestions}
                             onChange={(v) => onChange({...item, tags: v})}
+                        />
+                        <MultiValueInput
+                            dense
+                            label="Страны"
+                            placeholder="Начните вводить..."
+                            values={item.countries}
+                            suggestions={countrySuggestions}
+                            onChange={(v) => onChange({...item, countries: v})}
+                        />
+                        <MultiValueInput
+                            dense
+                            label="Города"
+                            placeholder="Начните вводить..."
+                            values={item.cities}
+                            suggestions={citySuggestions}
+                            onChange={(v) => onChange({...item, cities: v})}
                         />
                     </div>
 
@@ -304,9 +337,6 @@ export function ObjectCard({
                         />
                     </div>
 
-                    <div className="text-xs text-muted-foreground">
-                        Все изменения сохраняются автоматически в `db.json` (workspace).
-                    </div>
                 </CardContent>
             )}
         </Card>

@@ -91,6 +91,9 @@ export function ObjectsPage({
     const tagSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.tags)), [items]);
     const architectSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.architects)), [items]);
     const styleSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.styles)), [items]);
+    // Новые подсказки
+    const countrySuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.countries)), [items]);
+    const citySuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.cities)), [items]);
 
     const dupMap = useMemo(() => {
         const m = new Map<string, number>();
@@ -110,6 +113,8 @@ export function ObjectsPage({
         architects: [],
         styles: [],
         tags: [],
+        countries: [],
+        cities: [],
         yearStartMin: "",
         yearStartMax: "",
         yearEndMin: "",
@@ -138,10 +143,13 @@ export function ObjectsPage({
             if (!includesText(it.description ?? "", filters.description)) return false;
             if (!includesText(it.thoughts ?? "", filters.thoughts)) return false;
 
-            // multi-value fields (architects/styles/tags)
+            // multi-value fields (architects/styles/tags/countries/cities)
             if (!matchAllSelected(it.architects, filters.architects)) return false;
             if (!matchAllSelected(it.styles, filters.styles)) return false;
             if (!matchAllSelected(it.tags, filters.tags)) return false;
+            // Новые фильтры
+            if (!matchAllSelected(it.countries, filters.countries)) return false;
+            if (!matchAllSelected(it.cities, filters.cities)) return false;
 
             // years
             const ys = it.yearStart ?? null;
@@ -184,6 +192,8 @@ export function ObjectsPage({
         (filters.architects.length ? 1 : 0) +
         (filters.styles.length ? 1 : 0) +
         (filters.tags.length ? 1 : 0) +
+        (filters.countries.length ? 1 : 0) +
+        (filters.cities.length ? 1 : 0) +
         (filters.yearStartMin.trim() ? 1 : 0) +
         (filters.yearStartMax.trim() ? 1 : 0) +
         (filters.yearEndMin.trim() ? 1 : 0) +
@@ -201,6 +211,8 @@ export function ObjectsPage({
                 tagSuggestions={tagSuggestions}
                 architectSuggestions={architectSuggestions}
                 styleSuggestions={styleSuggestions}
+                countrySuggestions={countrySuggestions}
+                citySuggestions={citySuggestions}
             />
 
             {/* Верхняя панель */}
@@ -231,6 +243,9 @@ export function ObjectsPage({
                             architects: [],
                             address: "",
                             coordinates: { lat: null, lng: null },
+                            
+                            countries: [],
+                            cities: [],
                             styles: [],
                             tags: [],
                             description: "",
@@ -263,6 +278,9 @@ export function ObjectsPage({
                         tagSuggestions={tagSuggestions}
                         architectSuggestions={architectSuggestions}
                         styleSuggestions={styleSuggestions}
+                        
+                        countrySuggestions={countrySuggestions}
+                        citySuggestions={citySuggestions}
                         hasDuplicateName={() => {
                             const key = norm(openItem.name);
                             return key ? (dupMap.get(key) ?? 0) > 1 : false;
@@ -293,6 +311,8 @@ export function ObjectsPage({
                             tagSuggestions={tagSuggestions}
                             architectSuggestions={architectSuggestions}
                             styleSuggestions={styleSuggestions}
+                            countrySuggestions={countrySuggestions}
+                            citySuggestions={citySuggestions}
                             hasDuplicateName={hasDuplicateName}
                         />
                     );

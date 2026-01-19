@@ -1,3 +1,4 @@
+// types.ts
 export type Photo =
     | { type: "url"; value: string }
     | { type: "file"; value: string };
@@ -19,6 +20,9 @@ export type ArchitectureObject = {
     address: string;
     coordinates: Coordinates;
 
+    countries: string[];
+    cities: string[];
+
     styles: string[];
     tags: string[];
 
@@ -28,14 +32,14 @@ export type ArchitectureObject = {
     thoughts: string;
 };
 
-export type MarkerColorRules = {
-    tags: Record<string, string>;
-    styles: Record<string, string>;
-    architects: Record<string, string>;
+export type MarkerAppearanceRules = {
+    tagIcons: Record<string, string>;
+
+    styleColors: Record<string, string>;
 };
 
 export type DbFile = {
-    version: 2;
+    version: 3;
     items: ArchitectureObject[];
-    markerColorRules: MarkerColorRules;
+    markerAppearanceRules: MarkerAppearanceRules;
 };

@@ -1,4 +1,3 @@
-// App.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Sidebar, type AppTab } from "./components/Sidebar";
 import { ObjectsPage } from "./components/ObjectsPage";
@@ -15,8 +14,6 @@ function isFsAccessSupported() {
 
 export default function App() {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-    // NEW: вкладка
     const [activeTab, setActiveTab] = useState<AppTab>("objects");
 
     const [workspace, setWorkspace] = useState<FileSystemDirectoryHandle | null>(null);
@@ -27,7 +24,6 @@ export default function App() {
         { kind: "idle" | "loading" | "saving" | "saved" | "error"; message?: string }
     >({ kind: "idle" });
 
-    // загрузка сохранённого workspace handle (если был)
     useEffect(() => {
         (async () => {
             if (!isFsAccessSupported()) {
@@ -60,7 +56,6 @@ export default function App() {
         })();
     }, []);
 
-    // автосохранение (debounce)
     const saveTimer = useRef<number | null>(null);
     const lastSerialized = useRef<string>("");
 
@@ -108,8 +103,6 @@ export default function App() {
                 activeTab={activeTab}
                 onChangeTab={(t) => {
                     setActiveTab(t);
-                    // при уходе с DB можно закрывать открытую карточку (по желанию)
-                    // setOpenId(null);
                 }}
             />
 
@@ -118,7 +111,8 @@ export default function App() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="space-y-1">
                             <div className="text-sm text-muted-foreground">Workspace</div>
-                            <div className="text-sm">{workspace ? "Папка выбрана (доступ на запись есть)" : "Не выбрана"}</div>
+                            <div
+                                className="text-sm">{workspace ? "Папка выбрана (доступ на запись есть)" : "Не выбрана"}</div>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -127,7 +121,7 @@ export default function App() {
                                 variant="outline"
                                 onClick={async () => {
                                     if (!isFsAccessSupported()) return;
-                                    const h = await (window as any).showDirectoryPicker({ mode: "readwrite" });
+                                    const h = await (window as any).showDirectoryPicker({mode: "readwrite"});
                                     const ok = await ensureReadWritePermission(h);
                                     if (!ok) return;
 
@@ -137,7 +131,7 @@ export default function App() {
                                     const loaded = await readDb(h);
                                     setWorkspace(h);
                                     setDb(loaded);
-                                    setStatus({ kind: "saved", message: "Workspace подключен." });
+                                    setStatus({kind: "saved", message: "Workspace подключен."});
                                 }}
                             >
                                 Выбрать папку БД
@@ -159,7 +153,7 @@ export default function App() {
                         </div>
                     )}
 
-                    <Separator />
+                    <Separator/>
 
                     {activeTab === "objects" && (
                         <ObjectsPage
@@ -167,7 +161,7 @@ export default function App() {
                             items={db.items}
                             openId={openId}
                             setOpenId={setOpenId}
-                            onChangeItems={(next) => setDb({ ...db, items: next })}
+                            onChangeItems={(next) => setDb({...db, items: next})}
                         />
                     )}
 
@@ -178,11 +172,11 @@ export default function App() {
                                 setActiveTab("objects");
                                 setOpenId(id);
                             }}
-                            markerColorRules={db.markerColorRules ?? { tags: {}, styles: {}, architects: {} }}
-                            onChangeMarkerColorRules={(next) =>
+                            markerAppearanceRules={db.markerAppearanceRules ?? { tagIcons: {}, styleColors: {} }}
+                            onChangeMarkerAppearanceRules={(next) =>
                                 setDb({
                                     ...db,
-                                    markerColorRules: next,
+                                    markerAppearanceRules: next,
                                 })
                             }
                         />

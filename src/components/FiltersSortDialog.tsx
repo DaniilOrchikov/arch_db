@@ -36,6 +36,9 @@ export type Filters = {
     architects: string[];
     styles: string[];
     tags: string[];
+    
+    countries: string[];
+    cities: string[];
 
     yearStartMin: string;
     yearStartMax: string;
@@ -117,6 +120,9 @@ export function FiltersSortDialog({
                                       tagSuggestions,
                                       architectSuggestions,
                                       styleSuggestions,
+                                      
+                                      countrySuggestions,
+                                      citySuggestions,
                                   }: {
     open: boolean;
     onOpenChange: (v: boolean) => void;
@@ -130,6 +136,9 @@ export function FiltersSortDialog({
     tagSuggestions: string[];
     architectSuggestions: string[];
     styleSuggestions: string[];
+    
+    countrySuggestions: string[];
+    citySuggestions: string[];
 }) {
     const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
@@ -164,6 +173,9 @@ export function FiltersSortDialog({
         (filters.architects.length ? 1 : 0) +
         (filters.styles.length ? 1 : 0) +
         (filters.tags.length ? 1 : 0) +
+        // Новые фильтры
+        (filters.countries.length ? 1 : 0) +
+        (filters.cities.length ? 1 : 0) +
         (filters.yearStartMin.trim() ? 1 : 0) +
         (filters.yearStartMax.trim() ? 1 : 0) +
         (filters.yearEndMin.trim() ? 1 : 0) +
@@ -238,6 +250,26 @@ export function FiltersSortDialog({
                             />
                         </div>
 
+                        {/* Новая сетка для стран и городов */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                            <MultiValueInput
+                                dense
+                                label="Страны (фильтр)"
+                                placeholder="Добавьте страны..."
+                                values={filters.countries}
+                                suggestions={countrySuggestions}
+                                onChange={(v) => setFilters({ ...filters, countries: v })}
+                            />
+                            <MultiValueInput
+                                dense
+                                label="Города (фильтр)"
+                                placeholder="Добавьте города..."
+                                values={filters.cities}
+                                suggestions={citySuggestions}
+                                onChange={(v) => setFilters({ ...filters, cities: v })}
+                            />
+                        </div>
+
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <Input
                                 value={filters.yearStartMin}
@@ -275,6 +307,9 @@ export function FiltersSortDialog({
                                         architects: [],
                                         styles: [],
                                         tags: [],
+                                        
+                                        countries: [],
+                                        cities: [],
                                         yearStartMin: "",
                                         yearStartMax: "",
                                         yearEndMin: "",

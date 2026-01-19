@@ -5,16 +5,16 @@ import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
 import { MultiValueInput } from "./MultiValueInput";
-import type { MarkerColorRules } from "../lib/types";
+import type { MarkerAppearanceRules } from "../lib/types";
 import { MarkerColorRulesEditor } from "./MarkerColorRulesEditor";
 
 export type MapFilters = {
     architects: string[];
     styles: string[];
     tags: string[];
-
-    // территориальный фильтр
-    radiusKm: string; // строка как в остальных фильтрах
+    countries: string[];
+    cities: string[];
+    radiusKm: string;
 };
 
 export function MapFiltersDialog({
@@ -25,8 +25,10 @@ export function MapFiltersDialog({
                                      tagSuggestions,
                                      architectSuggestions,
                                      styleSuggestions,
-                                     markerColorRules,
-                                     setMarkerColorRules,
+                                     countrySuggestions,
+                                     citySuggestions,
+                                     markerAppearanceRules,
+                                     setMarkerAppearanceRules,
                                  }: {
     open: boolean;
     onOpenChange: (v: boolean) => void;
@@ -37,14 +39,18 @@ export function MapFiltersDialog({
     tagSuggestions: string[];
     architectSuggestions: string[];
     styleSuggestions: string[];
-
-    markerColorRules: MarkerColorRules;
-    setMarkerColorRules: (next: MarkerColorRules) => void;
+    countrySuggestions: string[];
+    citySuggestions: string[];
+    markerAppearanceRules: MarkerAppearanceRules;
+    setMarkerAppearanceRules: (next: MarkerAppearanceRules) => void;
 }) {
     const activeFiltersCount =
         (filters.architects.length ? 1 : 0) +
         (filters.styles.length ? 1 : 0) +
         (filters.tags.length ? 1 : 0) +
+        // Новые фильтры
+        (filters.countries.length ? 1 : 0) +
+        (filters.cities.length ? 1 : 0) +
         (filters.radiusKm.trim() ? 1 : 0);
 
     const radiusHint = useMemo(() => {
@@ -63,8 +69,7 @@ export function MapFiltersDialog({
                         Фильтры карты
                         {activeFiltersCount > 0 && <Badge variant="secondary">Активно: {activeFiltersCount}</Badge>}
                     </DialogTitle>
-                    <DialogDescription>
-                    </DialogDescription>
+                    <DialogDescription />
                 </DialogHeader>
 
                 <div className="space-y-5">
@@ -96,6 +101,26 @@ export function MapFiltersDialog({
                             />
                         </div>
 
+                        {/* Новая сетка для стран и городов */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                            <MultiValueInput
+                                dense
+                                label="Страны (фильтр)"
+                                placeholder="Добавьте страны..."
+                                values={filters.countries}
+                                suggestions={countrySuggestions}
+                                onChange={(v) => setFilters({ ...filters, countries: v })}
+                            />
+                            <MultiValueInput
+                                dense
+                                label="Города (фильтр)"
+                                placeholder="Добавьте города..."
+                                values={filters.cities}
+                                suggestions={citySuggestions}
+                                onChange={(v) => setFilters({ ...filters, cities: v })}
+                            />
+                        </div>
+
                         <Separator />
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
@@ -121,6 +146,8 @@ export function MapFiltersDialog({
                                             architects: [],
                                             styles: [],
                                             tags: [],
+                                            countries: [],
+                                            cities: [],
                                             radiusKm: "",
                                         })
                                     }
@@ -133,11 +160,10 @@ export function MapFiltersDialog({
                         <Separator />
 
                         <MarkerColorRulesEditor
-                            rules={markerColorRules}
-                            setRules={setMarkerColorRules}
+                            rules={markerAppearanceRules}
+                            setRules={setMarkerAppearanceRules}
                             tagSuggestions={tagSuggestions}
                             styleSuggestions={styleSuggestions}
-                            architectSuggestions={architectSuggestions}
                         />
                     </div>
                 </div>
