@@ -1,6 +1,8 @@
+// App.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sidebar } from "./components/Sidebar";
+import { Sidebar, type AppTab } from "./components/Sidebar";
 import { ObjectsPage } from "./components/ObjectsPage";
+import { MapPage } from "./components/MapPage";
 import type { DbFile } from "./lib/types";
 import { emptyDb, ensureImagesDir, readDb, writeDb } from "./lib/db";
 import { loadWorkspaceHandle, saveWorkspaceHandle, ensureReadWritePermission } from "./lib/workspace";
@@ -13,6 +15,9 @@ function isFsAccessSupported() {
 
 export default function App() {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+    // NEW: вкладка
+    const [activeTab, setActiveTab] = useState<AppTab>("objects");
 
     const [workspace, setWorkspace] = useState<FileSystemDirectoryHandle | null>(null);
     const [db, setDb] = useState<DbFile>(emptyDb());
@@ -28,8 +33,7 @@ export default function App() {
             if (!isFsAccessSupported()) {
                 setStatus({
                     kind: "error",
-                    message:
-                        "File System Access API не поддерживается в этом браузере. Используйте Chrome/Edge.",
+                    message: "File System Access API не поддерживается в этом браузере. Используйте Chrome/Edge.",
                 });
                 return;
             }
@@ -91,7 +95,9 @@ export default function App() {
             if (!k) continue;
             m.set(k, (m.get(k) ?? 0) + 1);
         }
-        return Array.from(m.entries()).filter(([, c]) => c > 1).map(([k]) => k);
+        return Array.from(m.entries())
+            .filter(([, c]) => c > 1)
+            .map(([k]) => k);
     }, [db.items]);
 
     return (
@@ -99,6 +105,12 @@ export default function App() {
             <Sidebar
                 collapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed((x) => !x)}
+                activeTab={activeTab}
+                onChangeTab={(t) => {
+                    setActiveTab(t);
+                    // при уходе с DB можно закрывать открытую карточку (по желанию)
+                    // setOpenId(null);
+                }}
             />
 
             <div className="flex-1 h-screen overflow-auto">
@@ -106,9 +118,7 @@ export default function App() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="space-y-1">
                             <div className="text-sm text-muted-foreground">Workspace</div>
-                            <div className="text-sm">
-                                {workspace ? "Папка выбрана (доступ на запись есть)" : "Не выбрана"}
-                            </div>
+                            <div className="text-sm">{workspace ? "Папка выбрана (доступ на запись есть)" : "Не выбрана"}</div>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -151,13 +161,32 @@ export default function App() {
 
                     <Separator />
 
-                    <ObjectsPage
-                        workspace={workspace}
-                        items={db.items}
-                        openId={openId}
-                        setOpenId={setOpenId}
-                        onChangeItems={(next) => setDb({ ...db, items: next })}
-                    />
+                    {activeTab === "objects" && (
+                        <ObjectsPage
+                            workspace={workspace}
+                            items={db.items}
+                            openId={openId}
+                            setOpenId={setOpenId}
+                            onChangeItems={(next) => setDb({ ...db, items: next })}
+                        />
+                    )}
+
+                    {activeTab === "map" && (
+                        <MapPage
+                            items={db.items}
+                            onOpenObject={(id) => {
+                                setActiveTab("objects");
+                                setOpenId(id);
+                            }}
+                            markerColorRules={db.markerColorRules ?? { tags: {}, styles: {}, architects: {} }}
+                            onChangeMarkerColorRules={(next) =>
+                                setDb({
+                                    ...db,
+                                    markerColorRules: next,
+                                })
+                            }
+                        />
+                    )}
                 </div>
             </div>
         </div>

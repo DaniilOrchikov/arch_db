@@ -89,3 +89,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+.leaflet-container {
+  z-index: 0;
+}
+
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 0;
+}
+
+.leaflet-popup,
+.leaflet-tooltip {
+  z-index: 1;
+}

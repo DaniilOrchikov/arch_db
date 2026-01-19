@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import type { Coordinates } from "../lib/types";
 
+
 // ВАЖНО: ?url для Vite, чтобы Leaflet получил корректные URL картинок
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png?url";
 import markerIcon from "leaflet/dist/images/marker-icon.png?url";

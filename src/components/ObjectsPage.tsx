@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { ArchitectureObject } from "../lib/types";
 import { Button } from "./ui/button";
 import { ObjectCard } from "./ObjectCard";
 import { v4 as uuidv4 } from "uuid";
-import { Plus } from "lucide-react";
+import { Plus, SlidersHorizontal } from "lucide-react";
+import { cn } from "../lib/utils";
+import { FiltersSortDialog, type Filters, type SortRule } from "./FiltersSortDialog";
 
 function uniqSorted(values: string[]) {
     const s = new Set(values.map((x) => x.trim()).filter(Boolean));
@@ -12,6 +14,65 @@ function uniqSorted(values: string[]) {
 
 function norm(s: string) {
     return s.trim().toLowerCase();
+}
+
+function includesText(haystack: string, needle: string) {
+    const n = norm(needle);
+    if (!n) return true;
+    return norm(haystack).includes(n);
+}
+
+function toNumOrNull(v: string) {
+    const t = v.trim();
+    if (!t) return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? n : null;
+}
+
+function compareNullableNumber(a: number | null | undefined, b: number | null | undefined) {
+    const aa = a ?? null;
+    const bb = b ?? null;
+    // nulls last
+    if (aa === null && bb === null) return 0;
+    if (aa === null) return 1;
+    if (bb === null) return -1;
+    return aa - bb;
+}
+
+function compareString(a: string, b: string) {
+    return a.localeCompare(b, undefined, { sensitivity: "base" });
+}
+
+function multiSort(items: ArchitectureObject[], rules: SortRule[]) {
+    if (!rules.length) return items;
+    const copy = [...items];
+
+    copy.sort((a, b) => {
+        for (const r of rules) {
+            let cmp = 0;
+
+            if (r.field === "name") {
+                cmp = compareString(a.name || "", b.name || "");
+            } else if (r.field === "yearStart") {
+                cmp = compareNullableNumber(a.yearStart ?? null, b.yearStart ?? null);
+            } else if (r.field === "yearEnd") {
+                cmp = compareNullableNumber(a.yearEnd ?? null, b.yearEnd ?? null);
+            }
+
+            if (cmp !== 0) return r.dir === "asc" ? cmp : -cmp;
+        }
+        return 0;
+    });
+
+    return copy;
+}
+
+// Фильтр по multi-value полям:
+// если фильтр пустой — ок; иначе объект должен содержать КАЖДОЕ значение (AND).
+function matchAllSelected(haystack: string[], selected: string[]) {
+    if (!selected.length) return true;
+    const hs = new Set(haystack.map(norm));
+    return selected.every((x) => hs.has(norm(x)));
 }
 
 export function ObjectsPage({
@@ -28,10 +89,7 @@ export function ObjectsPage({
     onChangeItems: (next: ArchitectureObject[]) => void;
 }) {
     const tagSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.tags)), [items]);
-    const architectSuggestions = useMemo(
-        () => uniqSorted(items.flatMap((i) => i.architects)),
-        [items]
-    );
+    const architectSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.architects)), [items]);
     const styleSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.styles)), [items]);
 
     const dupMap = useMemo(() => {
@@ -44,13 +102,121 @@ export function ObjectsPage({
         return m;
     }, [items]);
 
+    const [filters, setFilters] = useState<Filters>({
+        name: "",
+        address: "",
+        description: "",
+        thoughts: "",
+        architects: [],
+        styles: [],
+        tags: [],
+        yearStartMin: "",
+        yearStartMax: "",
+        yearEndMin: "",
+        yearEndMax: "",
+    });
+
+    const [sortRules, setSortRules] = useState<SortRule[]>([
+        { id: "sr-1", field: "yearStart", dir: "asc" },
+        { id: "sr-2", field: "name", dir: "asc" },
+    ]);
+
+    const [filtersOpen, setFiltersOpen] = useState(false);
+
     const openItem = openId ? items.find((x) => x.id === openId) ?? null : null;
-    const collapsedItems = openItem ? items.filter((x) => x.id !== openItem.id) : items;
+
+    const filteredSorted = useMemo(() => {
+        const ysMin = toNumOrNull(filters.yearStartMin);
+        const ysMax = toNumOrNull(filters.yearStartMax);
+        const yeMin = toNumOrNull(filters.yearEndMin);
+        const yeMax = toNumOrNull(filters.yearEndMax);
+
+        const filtered = items.filter((it) => {
+            // text fields
+            if (!includesText(it.name, filters.name)) return false;
+            if (!includesText(it.address, filters.address)) return false;
+            if (!includesText(it.description ?? "", filters.description)) return false;
+            if (!includesText(it.thoughts ?? "", filters.thoughts)) return false;
+
+            // multi-value fields (architects/styles/tags)
+            if (!matchAllSelected(it.architects, filters.architects)) return false;
+            if (!matchAllSelected(it.styles, filters.styles)) return false;
+            if (!matchAllSelected(it.tags, filters.tags)) return false;
+
+            // years
+            const ys = it.yearStart ?? null;
+            const ye = it.yearEnd ?? null;
+
+            if (ysMin !== null) {
+                if (ys === null) return false;
+                if (ys < ysMin) return false;
+            }
+            if (ysMax !== null) {
+                if (ys === null) return false;
+                if (ys > ysMax) return false;
+            }
+
+            if (yeMin !== null) {
+                if (ye === null) return false;
+                if (ye < yeMin) return false;
+            }
+            if (yeMax !== null) {
+                if (ye === null) return false;
+                if (ye > yeMax) return false;
+            }
+
+            return true;
+        });
+
+        return multiSort(filtered, sortRules);
+    }, [items, filters, sortRules]);
+
+    const collapsedItems = useMemo(() => {
+        if (!openItem) return filteredSorted;
+        return filteredSorted.filter((x) => x.id !== openItem.id);
+    }, [filteredSorted, openItem]);
+
+    const activeFiltersCount =
+        (filters.name.trim() ? 1 : 0) +
+        (filters.address.trim() ? 1 : 0) +
+        (filters.description.trim() ? 1 : 0) +
+        (filters.thoughts.trim() ? 1 : 0) +
+        (filters.architects.length ? 1 : 0) +
+        (filters.styles.length ? 1 : 0) +
+        (filters.tags.length ? 1 : 0) +
+        (filters.yearStartMin.trim() ? 1 : 0) +
+        (filters.yearStartMax.trim() ? 1 : 0) +
+        (filters.yearEndMin.trim() ? 1 : 0) +
+        (filters.yearEndMax.trim() ? 1 : 0);
 
     return (
         <div className="space-y-4">
+            <FiltersSortDialog
+                open={filtersOpen}
+                onOpenChange={setFiltersOpen}
+                filters={filters}
+                setFilters={setFilters}
+                sortRules={sortRules}
+                setSortRules={setSortRules}
+                tagSuggestions={tagSuggestions}
+                architectSuggestions={architectSuggestions}
+                styleSuggestions={styleSuggestions}
+            />
+
+            {/* Верхняя панель */}
             <div className="flex items-center justify-between gap-3">
-                <div>
+                <div className="flex items-center gap-2">
+                    <Button type="button" variant="outline" onClick={() => setFiltersOpen(true)}>
+                        <SlidersHorizontal size={16} />
+                        Фильтры и сортировка
+                        <span className={cn("ml-2 text-xs text-muted-foreground", activeFiltersCount === 0 && "hidden")}>
+              (активно: {activeFiltersCount})
+            </span>
+                    </Button>
+
+                    <div className="text-sm text-muted-foreground">
+                        Показано: {filteredSorted.length} / {items.length}
+                    </div>
                 </div>
 
                 <Button
@@ -80,6 +246,7 @@ export function ObjectsPage({
                 </Button>
             </div>
 
+            {/* Открытая карточка */}
             {openItem && (
                 <div className="space-y-3">
                     <ObjectCard
@@ -104,6 +271,7 @@ export function ObjectsPage({
                 </div>
             )}
 
+            {/* Сетка карточек */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {collapsedItems.map((it) => {
                     const key = norm(it.name);

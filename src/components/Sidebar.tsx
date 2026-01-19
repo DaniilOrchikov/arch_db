@@ -1,13 +1,19 @@
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
-import { PanelLeftClose, PanelLeftOpen, Database } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Database, Map as MapIcon } from "lucide-react";
+
+export type AppTab = "objects" | "map";
 
 export function Sidebar({
                             collapsed,
                             onToggle,
+                            activeTab,
+                            onChangeTab,
                         }: {
     collapsed: boolean;
     onToggle: () => void;
+    activeTab: AppTab;
+    onChangeTab: (t: AppTab) => void;
 }) {
     return (
         <div
@@ -28,16 +34,34 @@ export function Sidebar({
                 </Button>
             </div>
 
-            <div className="px-2">
-                <div
+            <div className="px-2 space-y-2">
+                <button
+                    type="button"
                     className={cn(
-                        "rounded-md px-3 py-2 text-sm",
-                        "bg-accent text-accent-foreground"
+                        "w-full rounded-md px-3 py-2 text-sm text-left flex items-center gap-2",
+                        activeTab === "objects" ? "bg-accent text-accent-foreground" : "hover:bg-accent/60"
                     )}
+                    onClick={() => onChangeTab("objects")}
                     title="Просмотр и создание объектов"
                 >
-                    {collapsed ? "DB" : "Просмотр и создание объектов"}
-                </div>
+                    <Database size={16} />
+                    {!collapsed && <span>Просмотр и создание объектов</span>}
+                    {collapsed && <span>DB</span>}
+                </button>
+
+                <button
+                    type="button"
+                    className={cn(
+                        "w-full rounded-md px-3 py-2 text-sm text-left flex items-center gap-2",
+                        activeTab === "map" ? "bg-accent text-accent-foreground" : "hover:bg-accent/60"
+                    )}
+                    onClick={() => onChangeTab("map")}
+                    title="Карта"
+                >
+                    <MapIcon size={16} />
+                    {!collapsed && <span>Карта</span>}
+                    {collapsed && <span>MAP</span>}
+                </button>
             </div>
 
             <div className="mt-auto p-3 text-xs text-muted-foreground">

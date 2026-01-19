@@ -3,7 +3,6 @@ import type {ArchitectureObject, Photo} from "../lib/types";
 import {Card, CardContent, CardHeader, CardTitle} from "./ui/card";
 import {Badge} from "./ui/badge";
 import {Input} from "./ui/input";
-import {Textarea} from "./ui/textarea";
 import {Separator} from "./ui/separator";
 import {Button} from "./ui/button";
 import {cn} from "../lib/utils";
@@ -270,7 +269,6 @@ export function ObjectCard({
                     <Separator/>
 
                     <div className="space-y-2">
-                        <div className="text-sm font-medium">Описание</div>
                         <MarkdownField
                             label="Описание"
                             value={item.description}
@@ -298,7 +296,6 @@ export function ObjectCard({
                     </div>
 
                     <div className="space-y-2">
-                        <div className="text-sm font-medium">Мысли</div>
                         <MarkdownField
                             label="Мысли"
                             value={item.thoughts}
