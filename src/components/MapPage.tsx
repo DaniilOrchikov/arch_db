@@ -30,6 +30,14 @@ function uniqSorted(values: string[]) {
     return Array.from(s).sort((a, b) => a.localeCompare(b));
 }
 
+// Функция для проверки совпадения по ИЛИ (OR) для стран и городов
+function matchAnySelected(haystack: string[], selected: string[]) {
+    if (!selected.length) return true;
+    const hs = new Set(haystack.map(norm));
+    return selected.some((x) => hs.has(norm(x)));
+}
+
+// Функция для проверки совпадения по И (AND) для остальных полей
 function matchAllSelected(haystack: string[], selected: string[]) {
     if (!selected.length) return true;
     const hs = new Set(haystack.map(norm));
@@ -195,7 +203,7 @@ export function MapPage({
         architects: [],
         styles: [],
         tags: [],
-        
+
         countries: [],
         cities: [],
         radiusKm: "",
@@ -206,12 +214,14 @@ export function MapPage({
 
     const filtered = useMemo(() => {
         return items.filter((it) => {
+            // Для архитекторов, стилей и тегов используется И (AND)
             if (!matchAllSelected(it.architects, filters.architects)) return false;
             if (!matchAllSelected(it.styles, filters.styles)) return false;
             if (!matchAllSelected(it.tags, filters.tags)) return false;
-            // Новые фильтры
-            if (!matchAllSelected(it.countries, filters.countries)) return false;
-            if (!matchAllSelected(it.cities, filters.cities)) return false;
+
+            // Для стран и городов используется ИЛИ (OR)
+            if (!matchAnySelected(it.countries, filters.countries)) return false;
+            if (!matchAnySelected(it.cities, filters.cities)) return false;
 
             if (center && radiusKm !== null) {
                 if (!hasCoords(it.coordinates)) return false;
@@ -254,7 +264,7 @@ export function MapPage({
                 tagSuggestions={tagSuggestions}
                 architectSuggestions={architectSuggestions}
                 styleSuggestions={styleSuggestions}
-                
+
                 countrySuggestions={countrySuggestions}
                 citySuggestions={citySuggestions}
                 markerAppearanceRules={markerAppearanceRules}

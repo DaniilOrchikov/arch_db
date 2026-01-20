@@ -7,7 +7,7 @@
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
-    --card: 0 0% 100%;
+    --card: 0 0% 98%; /* Светло-серый фон карточек в светлой теме */
     --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
@@ -32,7 +32,7 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem; /* Увеличим радиус для более мягкого вида */
 
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -42,10 +42,10 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222.2 84% 3.9%; /* Темнее фон */
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 217.2 32.6% 12%; /* Светлее фона в темной теме */
     --card-foreground: 210 40% 98%;
 
     --popover: 222.2 84% 4.9%;
@@ -54,20 +54,20 @@
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217.2 32.6% 20%; /* Более контрастный secondary */
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
+    --muted: 217.2 32.6% 20%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 217.2 32.6% 17.5%;
+    --accent: 217.2 32.6% 20%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62.8% 45%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217.2 32.6% 22%; /* Более заметные границы */
+    --input: 217.2 32.6% 22%;
     --ring: 212.7 26.8% 83.9%;
 
     --chart-1: 220 70% 50%;
@@ -87,18 +87,27 @@ body {
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 
+/* Улучшенные тени и эффекты для карточек */
+.shadow-card {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+.dark .shadow-card {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.3), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+}
+
+/* Плавные переходы для темной темы */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
 /* Leaflet карта в темной теме */
 .dark .leaflet-tile {
   filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
 }
 
 .dark .leaflet-container {
-  background: #1a1a1a;
-}
-
-/* Стили для переключателя темы */
-.theme-toggle {
-  transition: all 0.3s ease;
+  background: hsl(222.2 84% 3.9%);
 }
 
 /* Material icons в темной теме */
@@ -106,22 +115,83 @@ body {
   color: rgba(255, 255, 255, 0.87);
 }
 
-/* Прокрутка в темной теме */
-.dark ::-webkit-scrollbar {
-  width: 10px;
+/* Улучшенная прокрутка */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--card));
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 6px;
+  border: 3px solid hsl(var(--card));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
 }
 
 .dark ::-webkit-scrollbar-track {
-  background: #2d2d2d;
+  background: hsl(var(--card));
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: #555;
-  border-radius: 5px;
+  background: hsl(var(--muted));
+  border: 3px solid hsl(var(--card));
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #777;
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Улучшенные стили для инпутов и текстовых полей */
+input, textarea {
+  @apply transition-colors duration-200;
+}
+
+input:focus, textarea:focus {
+  @apply ring-2 ring-ring/20 ring-offset-1 ring-offset-background;
+}
+
+/* Стили для диалогов и модальных окон */
+[data-radix-popper-content-wrapper] {
+  @apply shadow-xl;
+}
+
+/* Анимации для открытия/закрытия модальных окон */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+[data-state="open"] {
+  animation: fadeIn 150ms ease-out;
+}
+
+[data-state="closed"] {
+  animation: fadeOut 150ms ease-in;
 }
 
 .leaflet-container {
@@ -137,4 +207,27 @@ body {
 .leaflet-popup,
 .leaflet-tooltip {
   z-index: 1;
+}
+
+/* Улучшенные стили для кнопок */
+button {
+  @apply transition-all duration-200;
+}
+
+button:active {
+  @apply scale-[0.98];
+}
+
+/* Улучшенные стили для разделителей */
+hr {
+  @apply border-border/50;
+}
+
+/* Стили для выбранного текста */
+::selection {
+  @apply bg-primary/20 text-foreground;
+}
+
+.dark ::selection {
+  @apply bg-primary/30;
 }

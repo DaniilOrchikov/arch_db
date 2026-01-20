@@ -36,7 +36,7 @@ export type Filters = {
     architects: string[];
     styles: string[];
     tags: string[];
-    
+
     countries: string[];
     cities: string[];
 
@@ -120,7 +120,7 @@ export function FiltersSortDialog({
                                       tagSuggestions,
                                       architectSuggestions,
                                       styleSuggestions,
-                                      
+
                                       countrySuggestions,
                                       citySuggestions,
                                   }: {
@@ -136,7 +136,7 @@ export function FiltersSortDialog({
     tagSuggestions: string[];
     architectSuggestions: string[];
     styleSuggestions: string[];
-    
+
     countrySuggestions: string[];
     citySuggestions: string[];
 }) {
@@ -189,10 +189,6 @@ export function FiltersSortDialog({
                         Фильтры и сортировка
                         {activeFiltersCount > 0 && <Badge variant="secondary">Активно: {activeFiltersCount}</Badge>}
                     </DialogTitle>
-                    <DialogDescription>
-                        Можно одновременно задавать несколько фильтров и несколько условий сортировки. Порядок сортировки
-                        меняется перетаскиванием.
-                    </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-5">
@@ -254,7 +250,7 @@ export function FiltersSortDialog({
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                             <MultiValueInput
                                 dense
-                                label="Страны (фильтр)"
+                                label="Страны (фильтр) - ИЛИ"
                                 placeholder="Добавьте страны..."
                                 values={filters.countries}
                                 suggestions={countrySuggestions}
@@ -262,7 +258,7 @@ export function FiltersSortDialog({
                             />
                             <MultiValueInput
                                 dense
-                                label="Города (фильтр)"
+                                label="Города (фильтр) - ИЛИ"
                                 placeholder="Добавьте города..."
                                 values={filters.cities}
                                 suggestions={citySuggestions}
@@ -307,7 +303,7 @@ export function FiltersSortDialog({
                                         architects: [],
                                         styles: [],
                                         tags: [],
-                                        
+
                                         countries: [],
                                         cities: [],
                                         yearStartMin: "",
@@ -327,7 +323,7 @@ export function FiltersSortDialog({
                     {/* СОРТИРОВКА */}
                     <div className="space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <div className="text-sm font-medium">Сортировка (несколько полей)</div>
+                            <div className="text-sm font-medium">Сортировка</div>
 
                             <div className="flex flex-wrap gap-2">
                                 {availableFields.map((f) => (

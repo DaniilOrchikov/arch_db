@@ -67,8 +67,14 @@ function multiSort(items: ArchitectureObject[], rules: SortRule[]) {
     return copy;
 }
 
-// Фильтр по multi-value полям:
-// если фильтр пустой — ок; иначе объект должен содержать КАЖДОЕ значение (AND).
+// Функция для проверки совпадения по ИЛИ (OR) для стран и городов
+function matchAnySelected(haystack: string[], selected: string[]) {
+    if (!selected.length) return true;
+    const hs = new Set(haystack.map(norm));
+    return selected.some((x) => hs.has(norm(x)));
+}
+
+// Функция для проверки совпадения по И (AND) для остальных полей
 function matchAllSelected(haystack: string[], selected: string[]) {
     if (!selected.length) return true;
     const hs = new Set(haystack.map(norm));
@@ -143,13 +149,14 @@ export function ObjectsPage({
             if (!includesText(it.description ?? "", filters.description)) return false;
             if (!includesText(it.thoughts ?? "", filters.thoughts)) return false;
 
-            // multi-value fields (architects/styles/tags/countries/cities)
+            // multi-value fields (архитекторы/стили/теги - И)
             if (!matchAllSelected(it.architects, filters.architects)) return false;
             if (!matchAllSelected(it.styles, filters.styles)) return false;
             if (!matchAllSelected(it.tags, filters.tags)) return false;
-            // Новые фильтры
-            if (!matchAllSelected(it.countries, filters.countries)) return false;
-            if (!matchAllSelected(it.cities, filters.cities)) return false;
+
+            // страны и города - ИЛИ
+            if (!matchAnySelected(it.countries, filters.countries)) return false;
+            if (!matchAnySelected(it.cities, filters.cities)) return false;
 
             // years
             const ys = it.yearStart ?? null;
@@ -243,7 +250,7 @@ export function ObjectsPage({
                             architects: [],
                             address: "",
                             coordinates: { lat: null, lng: null },
-                            
+
                             countries: [],
                             cities: [],
                             styles: [],
@@ -278,7 +285,7 @@ export function ObjectsPage({
                         tagSuggestions={tagSuggestions}
                         architectSuggestions={architectSuggestions}
                         styleSuggestions={styleSuggestions}
-                        
+
                         countrySuggestions={countrySuggestions}
                         citySuggestions={citySuggestions}
                         hasDuplicateName={() => {

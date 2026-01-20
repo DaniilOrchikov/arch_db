@@ -103,14 +103,6 @@ export function MultiValueInput({
                         }}
                         className={dense ? "h-8 text-sm" : undefined}
                     />
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        size={dense ? "sm" : "default"}
-                        onClick={() => addValue(q)}
-                    >
-                        Добавить
-                    </Button>
                 </div>
 
                 {open && (filtered.length > 0 || q.trim()) && (

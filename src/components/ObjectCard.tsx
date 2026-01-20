@@ -31,7 +31,7 @@ export function ObjectCard({
                                tagSuggestions,
                                architectSuggestions,
                                styleSuggestions,
-                               
+
                                countrySuggestions,
                                citySuggestions,
                                hasDuplicateName,
@@ -46,7 +46,7 @@ export function ObjectCard({
     tagSuggestions: string[];
     architectSuggestions: string[];
     styleSuggestions: string[];
-    
+
     countrySuggestions: string[];
     citySuggestions: string[];
     hasDuplicateName: boolean | (() => boolean);

@@ -3,7 +3,7 @@ import type { Photo } from "../lib/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { readWorkspaceFile, saveImageFileToWorkspace, deleteWorkspaceFile } from "../lib/photos";
-import { Trash2, Upload } from "lucide-react";
+import { Trash2, Upload, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "../lib/utils";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dialog";
 
@@ -109,6 +109,34 @@ export function PhotoEditor({
         if (!nextUrl) return;
         onChange([...photos, { type: "url", value: nextUrl }]);
     }
+
+    const goToPrev = () => {
+        setActiveIdx((prev) => (prev > 0 ? prev - 1 : photos.length - 1));
+    };
+
+    const goToNext = () => {
+        setActiveIdx((prev) => (prev < photos.length - 1 ? prev + 1 : 0));
+    };
+
+    // Обработчик клавиатуры для навигации
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!viewerOpen) return;
+
+            if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                goToPrev();
+            } else if (e.key === "ArrowRight") {
+                e.preventDefault();
+                goToNext();
+            } else if (e.key === "Escape") {
+                setViewerOpen(false);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [viewerOpen, photos.length]);
 
     return (
         <div className="space-y-3">
@@ -240,6 +268,20 @@ export function PhotoEditor({
                             </div>
                         </div>
 
+                        {/* Стрелка влево */}
+                        {photos.length > 1 && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-black/40 hover:bg-black/60 text-white"
+                                onClick={goToPrev}
+                                aria-label="Предыдущее фото"
+                            >
+                                <ChevronLeft size={24} />
+                            </Button>
+                        )}
+
                         {/* image */}
                         <div className="w-full h-full flex items-center justify-center">
                             {activeSrc ? (
@@ -248,6 +290,20 @@ export function PhotoEditor({
                                 <div className="text-sm text-white/70">Не удалось загрузить изображение</div>
                             )}
                         </div>
+
+                        {/* Стрелка вправо */}
+                        {photos.length > 1 && (
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 h-12 w-12 rounded-full bg-black/40 hover:bg-black/60 text-white"
+                                onClick={goToNext}
+                                aria-label="Следующее фото"
+                            >
+                                <ChevronRight size={24} />
+                            </Button>
+                        )}
 
                         {/* bottom info */}
                         <div className="absolute bottom-0 left-0 right-0 z-10 p-3 bg-gradient-to-t from-black/60 to-transparent">

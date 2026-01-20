@@ -6,6 +6,7 @@ import { Separator } from "./ui/separator";
 import { Badge } from "./ui/badge";
 import { MultiValueInput } from "./MultiValueInput";
 import type { MarkerAppearanceRules } from "../lib/types";
+
 import { MarkerColorRulesEditor } from "./MarkerColorRulesEditor";
 
 export type MapFilters = {
@@ -41,6 +42,7 @@ export function MapFiltersDialog({
     styleSuggestions: string[];
     countrySuggestions: string[];
     citySuggestions: string[];
+
     markerAppearanceRules: MarkerAppearanceRules;
     setMarkerAppearanceRules: (next: MarkerAppearanceRules) => void;
 }) {
@@ -105,7 +107,7 @@ export function MapFiltersDialog({
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                             <MultiValueInput
                                 dense
-                                label="Страны (фильтр)"
+                                label="Страны (фильтр) - ИЛИ"
                                 placeholder="Добавьте страны..."
                                 values={filters.countries}
                                 suggestions={countrySuggestions}
@@ -113,7 +115,7 @@ export function MapFiltersDialog({
                             />
                             <MultiValueInput
                                 dense
-                                label="Города (фильтр)"
+                                label="Города (фильтр) - ИЛИ"
                                 placeholder="Добавьте города..."
                                 values={filters.cities}
                                 suggestions={citySuggestions}
