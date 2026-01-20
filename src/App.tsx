@@ -7,6 +7,7 @@ import { emptyDb, ensureImagesDir, readDb, writeDb } from "./lib/db";
 import { loadWorkspaceHandle, saveWorkspaceHandle, ensureReadWritePermission } from "./lib/workspace";
 import { Button } from "./components/ui/button";
 import { Separator } from "./components/ui/separator";
+import { ThemeToggle } from "./components/ThemeToggle"; // Добавляем импорт
 
 function isFsAccessSupported() {
     return typeof window !== "undefined" && "showDirectoryPicker" in window;
@@ -96,7 +97,7 @@ export default function App() {
     }, [db.items]);
 
     return (
-        <div className="flex">
+        <div className="flex min-h-screen bg-background text-foreground">
             <Sidebar
                 collapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed((x) => !x)}
@@ -116,6 +117,9 @@ export default function App() {
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {/* Добавляем переключатель темы */}
+                            <ThemeToggle />
+
                             <Button
                                 type="button"
                                 variant="outline"
@@ -148,7 +152,7 @@ export default function App() {
                     </div>
 
                     {duplicateNames.length > 0 && (
-                        <div className="rounded-md border p-3 text-sm text-destructive">
+                        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
                             Есть дубли по названию: {duplicateNames.join(", ")}
                         </div>
                     )}
