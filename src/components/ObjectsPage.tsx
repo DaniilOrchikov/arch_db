@@ -87,17 +87,28 @@ export function ObjectsPage({
                                 openId,
                                 setOpenId,
                                 onChangeItems,
+
+                                filters,
+                                setFilters,
+
+                                sortRules,
+                                setSortRules,
                             }: {
     workspace: FileSystemDirectoryHandle | null;
     items: ArchitectureObject[];
     openId: string | null;
     setOpenId: (id: string | null) => void;
     onChangeItems: (next: ArchitectureObject[]) => void;
+
+    filters: Filters;
+    setFilters: (next: Filters) => void;
+
+    sortRules: SortRule[];
+    setSortRules: (next: SortRule[]) => void;
 }) {
     const tagSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.tags)), [items]);
     const architectSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.architects)), [items]);
     const styleSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.styles)), [items]);
-    // Новые подсказки
     const countrySuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.countries)), [items]);
     const citySuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.cities)), [items]);
 
@@ -110,27 +121,6 @@ export function ObjectsPage({
         }
         return m;
     }, [items]);
-
-    const [filters, setFilters] = useState<Filters>({
-        name: "",
-        address: "",
-        description: "",
-        thoughts: "",
-        architects: [],
-        styles: [],
-        tags: [],
-        countries: [],
-        cities: [],
-        yearStartMin: "",
-        yearStartMax: "",
-        yearEndMin: "",
-        yearEndMax: "",
-    });
-
-    const [sortRules, setSortRules] = useState<SortRule[]>([
-        { id: "sr-1", field: "yearStart", dir: "asc" },
-        { id: "sr-2", field: "name", dir: "asc" },
-    ]);
 
     const [filtersOpen, setFiltersOpen] = useState(false);
 

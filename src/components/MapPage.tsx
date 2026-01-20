@@ -183,31 +183,27 @@ export function MapPage({
                             onOpenObject,
                             markerAppearanceRules,
                             onChangeMarkerAppearanceRules,
+
+                            filters,
+                            setFilters,
                         }: {
     items: ArchitectureObject[];
     onOpenObject?: (id: string) => void;
     markerAppearanceRules: MarkerAppearanceRules;
     onChangeMarkerAppearanceRules: (next: MarkerAppearanceRules) => void;
+
+    filters: MapFilters;
+    setFilters: (next: MapFilters) => void;
 }) {
     const rules = markerAppearanceRules ?? EMPTY_RULES;
 
     const tagSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.tags)), [items]);
     const architectSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.architects)), [items]);
     const styleSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.styles)), [items]);
-    // Новые подсказки
     const countrySuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.countries)), [items]);
     const citySuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.cities)), [items]);
 
     const [filtersOpen, setFiltersOpen] = useState(false);
-    const [filters, setFilters] = useState<MapFilters>({
-        architects: [],
-        styles: [],
-        tags: [],
-
-        countries: [],
-        cities: [],
-        radiusKm: "",
-    });
 
     const [center, setCenter] = useState<{ lat: number; lng: number } | null>(null);
     const radiusKm = toNumOrNull(filters.radiusKm);

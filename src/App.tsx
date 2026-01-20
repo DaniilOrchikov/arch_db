@@ -7,23 +7,118 @@ import { emptyDb, ensureImagesDir, readDb, writeDb } from "./lib/db";
 import { loadWorkspaceHandle, saveWorkspaceHandle, ensureReadWritePermission } from "./lib/workspace";
 import { Button } from "./components/ui/button";
 import { Separator } from "./components/ui/separator";
-import { ThemeToggle } from "./components/ThemeToggle"; // Добавляем импорт
+import { ThemeToggle } from "./components/ThemeToggle";
+
+import type { Filters, SortRule } from "./components/FiltersSortDialog";
+import type { MapFilters } from "./components/MapFiltersDialog";
+import {
+    parseMapFiltersFromUrl,
+    parseObjectsFiltersFromUrl,
+    parseObjectsSortRulesFromUrl,
+    parseTabFromUrl,
+    syncMapFiltersToUrl,
+    syncObjectsFiltersToUrl,
+    syncObjectsSortRulesToUrl,
+    syncTabToUrl,
+} from "./lib/urlState";
 
 function isFsAccessSupported() {
     return typeof window !== "undefined" && "showDirectoryPicker" in window;
 }
 
+const DEFAULT_OBJECTS_SORT: SortRule[] = [
+    { id: "sr-1", field: "yearStart", dir: "asc" },
+    { id: "sr-2", field: "name", dir: "asc" },
+];
+
+const DEFAULT_OBJECTS_FILTERS: Filters = {
+    name: "",
+    address: "",
+    description: "",
+    thoughts: "",
+    architects: [],
+    styles: [],
+    tags: [],
+    countries: [],
+    cities: [],
+    yearStartMin: "",
+    yearStartMax: "",
+    yearEndMin: "",
+    yearEndMax: "",
+};
+
+const DEFAULT_MAP_FILTERS: MapFilters = {
+    architects: [],
+    styles: [],
+    tags: [],
+    countries: [],
+    cities: [],
+    radiusKm: "",
+};
+
 export default function App() {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-    const [activeTab, setActiveTab] = useState<AppTab>("objects");
+
+    // 1) tab из URL + синхронизация в URL
+    const [activeTab, setActiveTab] = useState<AppTab>(() => parseTabFromUrl("objects"));
+
+    // 2) filters/sort из URL + синхронизация в URL
+    const [objectsFilters, setObjectsFilters] = useState<Filters>(() => {
+        const parsed = parseObjectsFiltersFromUrl();
+        return { ...DEFAULT_OBJECTS_FILTERS, ...parsed };
+    });
+
+    const [objectsSortRules, setObjectsSortRules] = useState<SortRule[]>(() => {
+        return parseObjectsSortRulesFromUrl(DEFAULT_OBJECTS_SORT);
+    });
+
+    const [mapFilters, setMapFilters] = useState<MapFilters>(() => {
+        const parsed = parseMapFiltersFromUrl();
+        return { ...DEFAULT_MAP_FILTERS, ...parsed };
+    });
 
     const [workspace, setWorkspace] = useState<FileSystemDirectoryHandle | null>(null);
     const [db, setDb] = useState<DbFile>(emptyDb());
     const [openId, setOpenId] = useState<string | null>(null);
 
-    const [status, setStatus] = useState<
-        { kind: "idle" | "loading" | "saving" | "saved" | "error"; message?: string }
-    >({ kind: "idle" });
+    const [status, setStatus] = useState<{ kind: "idle" | "loading" | "saving" | "saved" | "error"; message?: string }>(
+        { kind: "idle" }
+    );
+
+    // при смене state -> URL
+    useEffect(() => {
+        syncTabToUrl(activeTab);
+    }, [activeTab]);
+
+    useEffect(() => {
+        syncObjectsFiltersToUrl(objectsFilters);
+    }, [objectsFilters]);
+
+    useEffect(() => {
+        syncObjectsSortRulesToUrl(objectsSortRules);
+    }, [objectsSortRules]);
+
+    useEffect(() => {
+        syncMapFiltersToUrl(mapFilters);
+    }, [mapFilters]);
+
+    // (опционально) реагировать на back/forward
+    useEffect(() => {
+        const onPopState = () => {
+            setActiveTab(parseTabFromUrl("objects"));
+
+            const of = parseObjectsFiltersFromUrl();
+            setObjectsFilters({ ...DEFAULT_OBJECTS_FILTERS, ...of });
+
+            setObjectsSortRules(parseObjectsSortRulesFromUrl(DEFAULT_OBJECTS_SORT));
+
+            const mf = parseMapFiltersFromUrl();
+            setMapFilters({ ...DEFAULT_MAP_FILTERS, ...mf });
+        };
+
+        window.addEventListener("popstate", onPopState);
+        return () => window.removeEventListener("popstate", onPopState);
+    }, []);
 
     useEffect(() => {
         (async () => {
@@ -102,9 +197,7 @@ export default function App() {
                 collapsed={sidebarCollapsed}
                 onToggle={() => setSidebarCollapsed((x) => !x)}
                 activeTab={activeTab}
-                onChangeTab={(t) => {
-                    setActiveTab(t);
-                }}
+                onChangeTab={(t) => setActiveTab(t)}
             />
 
             <div className="flex-1 h-screen overflow-auto">
@@ -112,12 +205,10 @@ export default function App() {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="space-y-1">
                             <div className="text-sm text-muted-foreground">Workspace</div>
-                            <div
-                                className="text-sm">{workspace ? "Папка выбрана (доступ на запись есть)" : "Не выбрана"}</div>
+                            <div className="text-sm">{workspace ? "Папка выбрана (доступ на запись есть)" : "Не выбрана"}</div>
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {/* Добавляем переключатель темы */}
                             <ThemeToggle />
 
                             <Button
@@ -125,7 +216,7 @@ export default function App() {
                                 variant="outline"
                                 onClick={async () => {
                                     if (!isFsAccessSupported()) return;
-                                    const h = await (window as any).showDirectoryPicker({mode: "readwrite"});
+                                    const h = await (window as any).showDirectoryPicker({ mode: "readwrite" });
                                     const ok = await ensureReadWritePermission(h);
                                     if (!ok) return;
 
@@ -135,7 +226,7 @@ export default function App() {
                                     const loaded = await readDb(h);
                                     setWorkspace(h);
                                     setDb(loaded);
-                                    setStatus({kind: "saved", message: "Workspace подключен."});
+                                    setStatus({ kind: "saved", message: "Workspace подключен." });
                                 }}
                             >
                                 Выбрать папку БД
@@ -157,7 +248,7 @@ export default function App() {
                         </div>
                     )}
 
-                    <Separator/>
+                    <Separator />
 
                     {activeTab === "objects" && (
                         <ObjectsPage
@@ -165,7 +256,11 @@ export default function App() {
                             items={db.items}
                             openId={openId}
                             setOpenId={setOpenId}
-                            onChangeItems={(next) => setDb({...db, items: next})}
+                            onChangeItems={(next) => setDb({ ...db, items: next })}
+                            filters={objectsFilters}
+                            setFilters={setObjectsFilters}
+                            sortRules={objectsSortRules}
+                            setSortRules={setObjectsSortRules}
                         />
                     )}
 
@@ -177,12 +272,9 @@ export default function App() {
                                 setOpenId(id);
                             }}
                             markerAppearanceRules={db.markerAppearanceRules ?? { tagIcons: {}, styleColors: {} }}
-                            onChangeMarkerAppearanceRules={(next) =>
-                                setDb({
-                                    ...db,
-                                    markerAppearanceRules: next,
-                                })
-                            }
+                            onChangeMarkerAppearanceRules={(next) => setDb({ ...db, markerAppearanceRules: next })}
+                            filters={mapFilters}
+                            setFilters={setMapFilters}
                         />
                     )}
                 </div>
