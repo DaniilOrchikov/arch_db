@@ -45,6 +45,7 @@ const DEFAULT_OBJECTS_FILTERS: Filters = {
     yearStartMax: "",
     yearEndMin: "",
     yearEndMax: "",
+    completed: "all",
 };
 
 const DEFAULT_MAP_FILTERS: MapFilters = {

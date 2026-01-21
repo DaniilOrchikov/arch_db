@@ -30,6 +30,7 @@ export type ArchitectureObject = {
     photos: Photo[];
 
     thoughts: string;
+    completed: boolean;
 };
 
 export type MarkerAppearanceRules = {

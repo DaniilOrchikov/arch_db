@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
@@ -7,6 +7,13 @@ import { MultiValueInput } from "./MultiValueInput";
 import { Badge } from "./ui/badge";
 import { cn } from "../lib/utils";
 import { GripVertical, Plus, Trash2 } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "./ui/select";
 
 import {
     DndContext,
@@ -44,6 +51,7 @@ export type Filters = {
     yearStartMax: string;
     yearEndMin: string;
     yearEndMax: string;
+    completed: "all" | "completed" | "uncompleted"; // Добавлено: фильтр по статусу
 };
 
 function fieldLabel(f: SortField) {
@@ -179,7 +187,8 @@ export function FiltersSortDialog({
         (filters.yearStartMin.trim() ? 1 : 0) +
         (filters.yearStartMax.trim() ? 1 : 0) +
         (filters.yearEndMin.trim() ? 1 : 0) +
-        (filters.yearEndMax.trim() ? 1 : 0);
+        (filters.yearEndMax.trim() ? 1 : 0) +
+        (filters.completed !== "all" ? 1 : 0); // Добавлено
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -222,7 +231,7 @@ export function FiltersSortDialog({
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                             <MultiValueInput
                                 dense
-                                label="Архитекторы (фильтр)"
+                                label="Архитекторы"
                                 placeholder="Добавьте значения..."
                                 values={filters.architects}
                                 suggestions={architectSuggestions}
@@ -230,7 +239,7 @@ export function FiltersSortDialog({
                             />
                             <MultiValueInput
                                 dense
-                                label="Стили (фильтр)"
+                                label="Стили"
                                 placeholder="Добавьте значения..."
                                 values={filters.styles}
                                 suggestions={styleSuggestions}
@@ -238,7 +247,7 @@ export function FiltersSortDialog({
                             />
                             <MultiValueInput
                                 dense
-                                label="Теги (фильтр)"
+                                label="Теги"
                                 placeholder="Добавьте значения..."
                                 values={filters.tags}
                                 suggestions={tagSuggestions}
@@ -250,7 +259,7 @@ export function FiltersSortDialog({
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                             <MultiValueInput
                                 dense
-                                label="Страны (фильтр) - ИЛИ"
+                                label="Страны"
                                 placeholder="Добавьте страны..."
                                 values={filters.countries}
                                 suggestions={countrySuggestions}
@@ -258,7 +267,7 @@ export function FiltersSortDialog({
                             />
                             <MultiValueInput
                                 dense
-                                label="Города (фильтр) - ИЛИ"
+                                label="Города"
                                 placeholder="Добавьте города..."
                                 values={filters.cities}
                                 suggestions={citySuggestions}
@@ -289,6 +298,26 @@ export function FiltersSortDialog({
                             />
                         </div>
 
+                        {/* Фильтр по статусу завершенности */}
+                        <div className="grid grid-cols-1 gap-2">
+                            <div className="text-xs font-medium text-muted-foreground">Статус объекта</div>
+                            <Select
+                                value={filters.completed}
+                                onValueChange={(value: "all" | "completed" | "uncompleted") =>
+                                    setFilters({ ...filters, completed: value })
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Выберите статус" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Все объекты</SelectItem>
+                                    <SelectItem value="completed">Только завершенные</SelectItem>
+                                    <SelectItem value="uncompleted">Только незавершенные</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         <div className="flex flex-wrap gap-2">
                             <Button
                                 type="button"
@@ -310,6 +339,7 @@ export function FiltersSortDialog({
                                         yearStartMax: "",
                                         yearEndMin: "",
                                         yearEndMax: "",
+                                        completed: "all", // Сброс к значению по умолчанию
                                     })
                                 }
                             >

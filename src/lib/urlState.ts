@@ -113,6 +113,7 @@ export function parseObjectsFiltersFromUrl(): Filters {
         yearStartMax: getString(p, "o_ysMax", ""),
         yearEndMin: getString(p, "o_yeMin", ""),
         yearEndMax: getString(p, "o_yeMax", ""),
+        completed: (getString(p, "o_completed", "all") as "all" | "completed" | "uncompleted") || "all", // Добавлено
     };
 }
 
@@ -135,6 +136,13 @@ export function syncObjectsFiltersToUrl(filters: Filters) {
     setString(p, "o_ysMax", filters.yearStartMax);
     setString(p, "o_yeMin", filters.yearEndMin);
     setString(p, "o_yeMax", filters.yearEndMax);
+
+    // Добавлено: синхронизация фильтра статуса
+    if (filters.completed && filters.completed !== "all") {
+        p.set("o_completed", filters.completed);
+    } else {
+        p.delete("o_completed");
+    }
 
     replaceParams(p);
 }

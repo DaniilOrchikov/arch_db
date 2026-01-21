@@ -12,6 +12,8 @@ import {PhotoEditor} from "./PhotoEditor";
 import {MapPicker} from "./MapPicker";
 import { MarkdownField } from "./MarkdownField";
 import {readWorkspaceFile} from "../lib/photos";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 
 
 async function resolveThumb(workspace: FileSystemDirectoryHandle | null, p: Photo): Promise<string> {
@@ -119,6 +121,11 @@ export function ObjectCard({
                         <div className="flex items-center justify-between gap-2">
                             <CardTitle className="truncate text-base">
                                 {item.name.trim() ? item.name : "Без названия"}
+                                {item.completed && ( // Бейдж в заголовке для завершенных объектов
+                                    <Badge variant="outline" className="ml-2 bg-green-500/10 text-green-600 border-green-300">
+                                        ✓
+                                    </Badge>
+                                )}
                             </CardTitle>
                         </div>
 
@@ -334,6 +341,24 @@ export function ObjectCard({
                             value={item.thoughts}
                             placeholder="Поддерживается Markdown..."
                             onChange={(v) => onChange({ ...item, thoughts: v })}
+                        />
+                    </div>
+
+                    {/* Переключатель статуса завершенности */}
+                    <Separator />
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                            <Label htmlFor="completed-status" className="text-sm font-medium">
+                                Статус объекта
+                            </Label>
+                            <div className="text-xs text-muted-foreground">
+                                {item.completed ? "Объект завершен ✓" : "Объект не завершен"}
+                            </div>
+                        </div>
+                        <Switch
+                            id="completed-status"
+                            checked={item.completed}
+                            onCheckedChange={(checked) => onChange({ ...item, completed: checked })}
                         />
                     </div>
 

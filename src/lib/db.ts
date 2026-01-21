@@ -30,6 +30,7 @@ export async function readDb(workspace: FileSystemDirectoryHandle): Promise<DbFi
                     ...item,
                     countries: [],
                     cities: [],
+                    completed: false, // Добавлено по умолчанию
                 })),
                 markerAppearanceRules: emptyMarkerAppearanceRules(),
             };
@@ -45,6 +46,7 @@ export async function readDb(workspace: FileSystemDirectoryHandle): Promise<DbFi
                     ...item,
                     countries: item.countries || [],
                     cities: item.cities || [],
+                    completed: item.completed || false, // Добавлено
                 })),
                 markerAppearanceRules: {
                     tagIcons: {},
@@ -65,6 +67,7 @@ export async function readDb(workspace: FileSystemDirectoryHandle): Promise<DbFi
                 ...item,
                 countries: item.countries || [],
                 cities: item.cities || [],
+                completed: item.completed || false, // Добавлено
             })),
             markerAppearanceRules: {
                 tagIcons: parsed.markerAppearanceRules.tagIcons ?? {},

@@ -79,7 +79,7 @@ export function MapFiltersDialog({
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                             <MultiValueInput
                                 dense
-                                label="Архитекторы (фильтр)"
+                                label="Архитекторы"
                                 placeholder="Добавьте значения..."
                                 values={filters.architects}
                                 suggestions={architectSuggestions}
@@ -87,7 +87,7 @@ export function MapFiltersDialog({
                             />
                             <MultiValueInput
                                 dense
-                                label="Стили (фильтр)"
+                                label="Стили"
                                 placeholder="Добавьте значения..."
                                 values={filters.styles}
                                 suggestions={styleSuggestions}
@@ -95,7 +95,7 @@ export function MapFiltersDialog({
                             />
                             <MultiValueInput
                                 dense
-                                label="Теги (фильтр)"
+                                label="Теги"
                                 placeholder="Добавьте значения..."
                                 values={filters.tags}
                                 suggestions={tagSuggestions}
@@ -107,7 +107,7 @@ export function MapFiltersDialog({
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                             <MultiValueInput
                                 dense
-                                label="Страны (фильтр) - ИЛИ"
+                                label="Страны"
                                 placeholder="Добавьте страны..."
                                 values={filters.countries}
                                 suggestions={countrySuggestions}
@@ -115,7 +115,7 @@ export function MapFiltersDialog({
                             />
                             <MultiValueInput
                                 dense
-                                label="Города (фильтр) - ИЛИ"
+                                label="Города"
                                 placeholder="Добавьте города..."
                                 values={filters.cities}
                                 suggestions={citySuggestions}

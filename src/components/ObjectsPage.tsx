@@ -148,6 +148,10 @@ export function ObjectsPage({
             if (!matchAnySelected(it.countries, filters.countries)) return false;
             if (!matchAnySelected(it.cities, filters.cities)) return false;
 
+            // Фильтр по статусу завершенности
+            if (filters.completed === "completed" && !it.completed) return false;
+            if (filters.completed === "uncompleted" && it.completed) return false;
+
             // years
             const ys = it.yearStart ?? null;
             const ye = it.yearEnd ?? null;
@@ -194,7 +198,8 @@ export function ObjectsPage({
         (filters.yearStartMin.trim() ? 1 : 0) +
         (filters.yearStartMax.trim() ? 1 : 0) +
         (filters.yearEndMin.trim() ? 1 : 0) +
-        (filters.yearEndMax.trim() ? 1 : 0);
+        (filters.yearEndMax.trim() ? 1 : 0) +
+        (filters.completed !== "all" ? 1 : 0); // Добавлено
 
     return (
         <div className="space-y-4">
@@ -248,6 +253,7 @@ export function ObjectsPage({
                             description: "",
                             photos: [],
                             thoughts: "",
+                            completed: false, // Добавлено: по умолчанию незавершен
                         };
                         onChangeItems([empty, ...items]);
                         setOpenId(id);
