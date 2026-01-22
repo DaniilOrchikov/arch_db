@@ -1,3 +1,4 @@
+// urlState.ts (обновленный)
 import type { AppTab } from "../components/Sidebar";
 import type { Filters, SortRule, SortField } from "../components/FiltersSortDialog";
 import type { MapFilters } from "../components/MapFiltersDialog";
@@ -49,10 +50,9 @@ export function parseSortRules(p: URLSearchParams, key: string, fallback: SortRu
     const raw = p.get(key);
     if (!raw) return fallback;
 
-    // формат: "yearStart:asc,name:desc"
     const parts = raw.split(",").map((x) => x.trim()).filter(Boolean);
-
     const rules: SortRule[] = [];
+
     for (let i = 0; i < parts.length; i++) {
         const [fieldRaw, dirRaw] = parts[i].split(":");
         const field = (fieldRaw ?? "").trim();
@@ -85,7 +85,7 @@ export function serializeSortRules(p: URLSearchParams, key: string, rules: SortR
 export function parseTabFromUrl(fallback: AppTab = "objects"): AppTab {
     const p = getParams();
     const t = p.get("tab");
-    return t === "map" || t === "objects" ? t : fallback;
+    return t === "map" || t === "objects" || t === "styles" ? t : fallback;
 }
 
 export function syncTabToUrl(tab: AppTab) {

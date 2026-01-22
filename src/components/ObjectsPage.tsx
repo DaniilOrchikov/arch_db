@@ -93,6 +93,7 @@ export function ObjectsPage({
 
                                 sortRules,
                                 setSortRules,
+                                onOpenStyle, // Добавлено: обработчик открытия стиля
                             }: {
     workspace: FileSystemDirectoryHandle | null;
     items: ArchitectureObject[];
@@ -105,6 +106,7 @@ export function ObjectsPage({
 
     sortRules: SortRule[];
     setSortRules: (next: SortRule[]) => void;
+    onOpenStyle?: (styleName: string) => void; // Добавлено: обработчик открытия стиля
 }) {
     const tagSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.tags)), [items]);
     const architectSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.architects)), [items]);
@@ -288,6 +290,7 @@ export function ObjectsPage({
                             const key = norm(openItem.name);
                             return key ? (dupMap.get(key) ?? 0) > 1 : false;
                         }}
+                        onStyleClick={onOpenStyle} // Добавлено: передаем обработчик
                     />
                 </div>
             )}
@@ -317,6 +320,7 @@ export function ObjectsPage({
                             countrySuggestions={countrySuggestions}
                             citySuggestions={citySuggestions}
                             hasDuplicateName={hasDuplicateName}
+                            onStyleClick={onOpenStyle} // Добавлено: передаем обработчик
                         />
                     );
                 })}

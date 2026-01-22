@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { Badge } from "./ui/badge";
 import { Input } from "./ui/input";
-import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import { X } from "lucide-react";
 
@@ -16,6 +15,7 @@ export function MultiValueInput({
                                     suggestions,
                                     onChange,
                                     dense = false,
+                                    onItemClick, // Добавлено: обработчик клика на элемент
                                 }: {
     label: string;
     placeholder?: string;
@@ -23,6 +23,7 @@ export function MultiValueInput({
     suggestions: string[];
     onChange: (next: string[]) => void;
     dense?: boolean;
+    onItemClick?: (value: string) => void; // Добавлено: обработчик клика на элемент
 }) {
     const [q, setQ] = useState("");
     const [open, setOpen] = useState(false);
@@ -52,6 +53,14 @@ export function MultiValueInput({
         onChange(values.filter((x) => norm(x) !== norm(v)));
     }
 
+    // Обработчик клика на значение
+    const handleValueClick = (value: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (onItemClick) {
+            onItemClick(value);
+        }
+    };
+
     return (
         <div
             className={dense ? "space-y-1.5" : "space-y-2"}
@@ -69,12 +78,19 @@ export function MultiValueInput({
             <div className={cn("flex flex-wrap items-center", dense ? "gap-1.5" : "gap-2")}>
                 {values.map((v) => (
                     <div key={v} className="flex items-center gap-1">
-                        <Badge className={cn("gap-1", dense && "px-1.5 py-0 text-[11px]")}>
+                        <Badge
+                            className={cn("gap-1", dense && "px-1.5 py-0 text-[11px]", onItemClick && "cursor-pointer hover:bg-primary/80 transition-colors")}
+                            onClick={(e) => onItemClick && handleValueClick(v, e)}
+                            title={onItemClick ? `Нажмите для перехода к ${label.toLowerCase()} "${v}"` : undefined}
+                        >
                             <span className={cn("truncate", dense ? "max-w-[180px]" : "max-w-[220px]")}>{v}</span>
                             <button
                                 type="button"
                                 className="ml-1 rounded hover:opacity-80"
-                                onClick={() => removeValue(v)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeValue(v);
+                                }}
                                 aria-label="remove"
                             >
                                 <X size={12} />
@@ -121,7 +137,7 @@ export function MultiValueInput({
                             ))}
                             {filtered.length === 0 && (
                                 <div className="px-2 py-2 text-sm text-muted-foreground">
-                                    Нет совпадений. Нажмите Enter, чтобы добавить “{q.trim()}”.
+                                    Нет совпадений. Нажмите Enter, чтобы добавить "{q.trim()}".
                                 </div>
                             )}
                         </div>

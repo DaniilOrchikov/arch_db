@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Sidebar, type AppTab } from "./components/Sidebar";
 import { ObjectsPage } from "./components/ObjectsPage";
 import { MapPage } from "./components/MapPage";
+import { StylesPage } from "./components/StylesPage"; // Новый импорт
 import type { DbFile } from "./lib/types";
-import { emptyDb, ensureImagesDir, readDb, writeDb } from "./lib/db";
+import { emptyDb, ensureImagesDir, readDb, writeDb, updateStyleRelationships } from "./lib/db";
 import { loadWorkspaceHandle, saveWorkspaceHandle, ensureReadWritePermission } from "./lib/workspace";
 import { Button } from "./components/ui/button";
 import { Separator } from "./components/ui/separator";
@@ -59,20 +60,14 @@ const DEFAULT_MAP_FILTERS: MapFilters = {
 
 export default function App() {
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
-    // 1) tab из URL + синхронизация в URL
     const [activeTab, setActiveTab] = useState<AppTab>(() => parseTabFromUrl("objects"));
-
-    // 2) filters/sort из URL + синхронизация в URL
     const [objectsFilters, setObjectsFilters] = useState<Filters>(() => {
         const parsed = parseObjectsFiltersFromUrl();
         return { ...DEFAULT_OBJECTS_FILTERS, ...parsed };
     });
-
     const [objectsSortRules, setObjectsSortRules] = useState<SortRule[]>(() => {
         return parseObjectsSortRulesFromUrl(DEFAULT_OBJECTS_SORT);
     });
-
     const [mapFilters, setMapFilters] = useState<MapFilters>(() => {
         const parsed = parseMapFiltersFromUrl();
         return { ...DEFAULT_MAP_FILTERS, ...parsed };
@@ -81,12 +76,13 @@ export default function App() {
     const [workspace, setWorkspace] = useState<FileSystemDirectoryHandle | null>(null);
     const [db, setDb] = useState<DbFile>(emptyDb());
     const [openId, setOpenId] = useState<string | null>(null);
+    const [openStyleId, setOpenStyleId] = useState<string | null>(null); // Добавлено: состояние для открытого стиля
 
     const [status, setStatus] = useState<{ kind: "idle" | "loading" | "saving" | "saved" | "error"; message?: string }>(
         { kind: "idle" }
     );
 
-    // при смене state -> URL
+    // Синхронизация с URL
     useEffect(() => {
         syncTabToUrl(activeTab);
     }, [activeTab]);
@@ -103,16 +99,12 @@ export default function App() {
         syncMapFiltersToUrl(mapFilters);
     }, [mapFilters]);
 
-    // (опционально) реагировать на back/forward
     useEffect(() => {
         const onPopState = () => {
             setActiveTab(parseTabFromUrl("objects"));
-
             const of = parseObjectsFiltersFromUrl();
             setObjectsFilters({ ...DEFAULT_OBJECTS_FILTERS, ...of });
-
             setObjectsSortRules(parseObjectsSortRulesFromUrl(DEFAULT_OBJECTS_SORT));
-
             const mf = parseMapFiltersFromUrl();
             setMapFilters({ ...DEFAULT_MAP_FILTERS, ...mf });
         };
@@ -121,6 +113,7 @@ export default function App() {
         return () => window.removeEventListener("popstate", onPopState);
     }, []);
 
+    // Загрузка workspace
     useEffect(() => {
         (async () => {
             if (!isFsAccessSupported()) {
@@ -153,6 +146,7 @@ export default function App() {
         })();
     }, []);
 
+    // Автоматическое сохранение
     const saveTimer = useRef<number | null>(null);
     const lastSerialized = useRef<string>("");
 
@@ -180,6 +174,14 @@ export default function App() {
         };
     }, [db, workspace]);
 
+    // Обновление связей стилей при изменении объектов
+    useEffect(() => {
+        const updatedStyles = updateStyleRelationships(db.items, db.styles);
+        if (JSON.stringify(updatedStyles) !== JSON.stringify(db.styles)) {
+            setDb(prev => ({ ...prev, styles: updatedStyles }));
+        }
+    }, [db.items]);
+
     const duplicateNames = useMemo(() => {
         const m = new Map<string, number>();
         for (const it of db.items) {
@@ -191,6 +193,20 @@ export default function App() {
             .filter(([, c]) => c > 1)
             .map(([k]) => k);
     }, [db.items]);
+
+    // Обработчик клика на стиль в объекте
+    const handleStyleClick = (styleName: string) => {
+        // Находим стиль по названию
+        const style = db.styles.find(s => s.name === styleName);
+        if (style) {
+            setActiveTab("styles");
+            setOpenStyleId(style.id);
+        } else {
+            // Если стиль не найден, просто переходим на вкладку стилей
+            setActiveTab("styles");
+            setOpenStyleId(null);
+        }
+    };
 
     return (
         <div className="flex min-h-screen bg-background text-foreground">
@@ -262,6 +278,22 @@ export default function App() {
                             setFilters={setObjectsFilters}
                             sortRules={objectsSortRules}
                             setSortRules={setObjectsSortRules}
+                            onOpenStyle={handleStyleClick} // Добавлено: передаем обработчик
+                        />
+                    )}
+
+                    {activeTab === "styles" && (
+                        <StylesPage
+                            workspace={workspace}
+                            items={db.items}
+                            styles={db.styles}
+                            onChangeStyles={(next) => setDb({ ...db, styles: next })}
+                            onOpenObject={(id) => {
+                                setActiveTab("objects");
+                                setOpenId(id);
+                            }}
+                            openStyleId={openStyleId} // Добавлено: передаем ID открытого стиля
+                            onOpenStyle={setOpenStyleId} // Добавлено: передаем setter для открытия стиля
                         />
                     )}
 

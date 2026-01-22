@@ -37,6 +37,7 @@ export function ObjectCard({
                                countrySuggestions,
                                citySuggestions,
                                hasDuplicateName,
+                               onStyleClick, // Добавлено: обработчик клика на стиль
                            }: {
     workspace: FileSystemDirectoryHandle | null;
     item: ArchitectureObject;
@@ -52,6 +53,7 @@ export function ObjectCard({
     countrySuggestions: string[];
     citySuggestions: string[];
     hasDuplicateName: boolean | (() => boolean);
+    onStyleClick?: (styleName: string) => void; // Добавлено: обработчик клика на стиль
 }) {
     const isDuplicate = typeof hasDuplicateName === "function" ? hasDuplicateName() : hasDuplicateName;
 
@@ -103,6 +105,14 @@ export function ObjectCard({
         return `${item.styles[0]} +${item.styles.length - 1}`;
     }, [item.styles]);
 
+    // Обработчик клика на стиль в свернутом состоянии
+    const handleStyleClick = (styleName: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (onStyleClick) {
+            onStyleClick(styleName);
+        }
+    };
+
     return (
         <Card className="overflow-hidden">
             <CardHeader
@@ -133,7 +143,13 @@ export function ObjectCard({
                             {/* Левая часть: теги, стили, архитекторы, страны, города */}
                             <div className="flex flex-wrap items-center gap-1.5 overflow-hidden min-w-0 flex-1">
                                 {stylePreview && (
-                                    <Badge>{stylePreview}</Badge>
+                                    <Badge
+                                        className="cursor-pointer hover:bg-primary/80 transition-colors"
+                                        onClick={(e) => handleStyleClick(item.styles[0], e)}
+                                        title="Нажмите для перехода к стилю"
+                                    >
+                                        {stylePreview}
+                                    </Badge>
                                 )}
                                 {item.countries.slice(0, 2).map((c) => (
                                     <Badge key={c}>
@@ -263,6 +279,7 @@ export function ObjectCard({
                             values={item.styles}
                             suggestions={styleSuggestions}
                             onChange={(v) => onChange({...item, styles: v})}
+                            onItemClick={onStyleClick} // Добавлено: передаем обработчик клика
                         />
 
                         <MultiValueInput
