@@ -23,6 +23,35 @@ async function resolveThumb(workspace: FileSystemDirectoryHandle | null, p: Phot
     return URL.createObjectURL(f);
 }
 
+// Функция для проверки заполненности обязательных полей
+function checkRequiredFieldsFilled(item: ArchitectureObject): boolean {
+    return (
+        item.name.trim() !== "" &&
+        item.yearStart !== null &&
+        item.yearEnd !== null &&
+        item.countries.length > 0 &&
+        item.cities.length > 0 &&
+        item.styles.length > 0 &&
+        item.tags.length > 0 &&
+        item.photos.length > 0
+    );
+}
+
+// Функция для обновления статуса completed на основе заполненности полей
+function updateCompletedStatus(item: ArchitectureObject): ArchitectureObject {
+    const shouldBeCompleted = checkRequiredFieldsFilled(item);
+
+    // Если статус уже совпадает с требуемым, возвращаем объект без изменений
+    if (item.completed === shouldBeCompleted) {
+        return item;
+    }
+
+    return {
+        ...item,
+        completed: shouldBeCompleted
+    };
+}
+
 export function ObjectCard({
                                workspace,
                                item,
@@ -53,7 +82,7 @@ export function ObjectCard({
     countrySuggestions: string[];
     citySuggestions: string[];
     hasDuplicateName: boolean | (() => boolean);
-    onStyleClick?: (styleName: string) => void; // Добавлено: обработчик клика на стиль
+    onStyleClick?: (styleName: string) => void;
 }) {
     const isDuplicate = typeof hasDuplicateName === "function" ? hasDuplicateName() : hasDuplicateName;
 
@@ -98,6 +127,23 @@ export function ObjectCard({
             alive = false;
         };
     }, [item.photos, workspace]);
+
+    // Эффект для автоматического обновления статуса completed при изменении полей
+    useEffect(() => {
+        const updatedItem = updateCompletedStatus(item);
+        if (updatedItem.completed !== item.completed) {
+            onChange(updatedItem);
+        }
+    }, [
+        item.name,
+        item.yearStart,
+        item.yearEnd,
+        item.countries.length,
+        item.cities.length,
+        item.styles.length,
+        item.tags.length,
+        item.photos.length
+    ]);
 
     const stylePreview = useMemo(() => {
         if (!item.styles.length) return null;
@@ -183,7 +229,6 @@ export function ObjectCard({
                                 )}
                             </div>
 
-                            {/* Правая часть: миниатюра и стрелочка */}
                             <div className="flex items-center gap-2 shrink-0">
                                 <div className="h-28 w-30 rounded-md overflow-hidden border bg-muted flex-shrink-0">
                                     {thumb ? (
@@ -205,6 +250,11 @@ export function ObjectCard({
                         >
                             <ChevronUp size={18}/>
                         </Button>
+                        {item.completed && ( // Бейдж в заголовке для завершенных объектов
+                            <Badge variant="outline" className="ml-2 bg-green-500/10 text-green-600 border-green-300">
+                                ✓
+                            </Badge>
+                        )}
                     </div>
                 )}
             </CardHeader>
@@ -221,7 +271,11 @@ export function ObjectCard({
                                     (titleIsEmpty || isDuplicate) && "border-destructive focus-visible:ring-destructive"
                                 )}
                                 onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => onChange({...item, name: e.target.value})}
+                                onChange={(e) => {
+                                    const updated = { ...item, name: e.target.value };
+                                    const withStatus = updateCompletedStatus(updated);
+                                    onChange(withStatus);
+                                }}
                                 placeholder="Например: Собор Парижской Богоматери"
                             />
                             {(titleIsEmpty || titleError) && (
@@ -237,12 +291,14 @@ export function ObjectCard({
                                 type="number"
                                 value={item.yearStart ?? ""}
                                 placeholder="1883"
-                                onChange={(e) =>
-                                    onChange({
+                                onChange={(e) => {
+                                    const updated = {
                                         ...item,
                                         yearStart: e.target.value === "" ? null : Number(e.target.value),
-                                    })
-                                }
+                                    };
+                                    const withStatus = updateCompletedStatus(updated);
+                                    onChange(withStatus);
+                                }}
                             />
                         </div>
 
@@ -252,12 +308,14 @@ export function ObjectCard({
                                 type="number"
                                 value={item.yearEnd ?? ""}
                                 placeholder="1889"
-                                onChange={(e) =>
-                                    onChange({
+                                onChange={(e) => {
+                                    const updated = {
                                         ...item,
                                         yearEnd: e.target.value === "" ? null : Number(e.target.value),
-                                    })
-                                }
+                                    };
+                                    const withStatus = updateCompletedStatus(updated);
+                                    onChange(withStatus);
+                                }}
                             />
                         </div>
                     </div>
@@ -269,7 +327,11 @@ export function ObjectCard({
                             placeholder="Начните вводить..."
                             values={item.architects}
                             suggestions={architectSuggestions}
-                            onChange={(v) => onChange({...item, architects: v})}
+                            onChange={(v) => {
+                                const updated = { ...item, architects: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
                         />
 
                         <MultiValueInput
@@ -278,7 +340,11 @@ export function ObjectCard({
                             placeholder="Начните вводить..."
                             values={item.styles}
                             suggestions={styleSuggestions}
-                            onChange={(v) => onChange({...item, styles: v})}
+                            onChange={(v) => {
+                                const updated = { ...item, styles: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
                             onItemClick={onStyleClick} // Добавлено: передаем обработчик клика
                         />
 
@@ -288,7 +354,11 @@ export function ObjectCard({
                             placeholder="Начните вводить..."
                             values={item.tags}
                             suggestions={tagSuggestions}
-                            onChange={(v) => onChange({...item, tags: v})}
+                            onChange={(v) => {
+                                const updated = { ...item, tags: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
                         />
                         <MultiValueInput
                             dense
@@ -296,7 +366,11 @@ export function ObjectCard({
                             placeholder="Начните вводить..."
                             values={item.countries}
                             suggestions={countrySuggestions}
-                            onChange={(v) => onChange({...item, countries: v})}
+                            onChange={(v) => {
+                                const updated = { ...item, countries: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
                         />
                         <MultiValueInput
                             dense
@@ -304,7 +378,11 @@ export function ObjectCard({
                             placeholder="Начните вводить..."
                             values={item.cities}
                             suggestions={citySuggestions}
-                            onChange={(v) => onChange({...item, cities: v})}
+                            onChange={(v) => {
+                                const updated = { ...item, cities: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
                         />
                     </div>
 
@@ -330,14 +408,22 @@ export function ObjectCard({
                             label="Описание"
                             value={item.description}
                             placeholder="Поддерживается Markdown..."
-                            onChange={(v) => onChange({ ...item, description: v })}
+                            onChange={(v) => {
+                                const updated = { ...item, description: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
                         />
                     </div>
 
                     <PhotoEditor
                         workspace={workspace}
                         photos={item.photos}
-                        onChange={(p) => onChange({...item, photos: p})}
+                        onChange={(p) => {
+                            const updated = { ...item, photos: p };
+                            const withStatus = updateCompletedStatus(updated);
+                            onChange(withStatus);
+                        }}
                     />
 
                     <Separator/>
@@ -347,8 +433,16 @@ export function ObjectCard({
                         <MapPicker
                             address={item.address}
                             value={item.coordinates}
-                            onChange={(c) => onChange({...item, coordinates: c})}
-                            onChangeAddress={(address) => onChange({...item, address})}
+                            onChange={(c) => {
+                                const updated = { ...item, coordinates: c };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
+                            onChangeAddress={(address) => {
+                                const updated = { ...item, address };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
                         />
                     </div>
 
@@ -357,7 +451,11 @@ export function ObjectCard({
                             label="Мысли"
                             value={item.thoughts}
                             placeholder="Поддерживается Markdown..."
-                            onChange={(v) => onChange({ ...item, thoughts: v })}
+                            onChange={(v) => {
+                                const updated = { ...item, thoughts: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
                         />
                     </div>
 
@@ -371,11 +469,17 @@ export function ObjectCard({
                             <div className="text-xs text-muted-foreground">
                                 {item.completed ? "Объект завершен ✓" : "Объект не завершен"}
                             </div>
+                            {!item.completed && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                    Для завершения заполните: Название, год начала, год окончания, страну, город, стиль, теги и добавьте хотя бы 1 фото.
+                                </div>
+                            )}
                         </div>
                         <Switch
                             id="completed-status"
                             checked={item.completed}
                             onCheckedChange={(checked) => onChange({ ...item, completed: checked })}
+                            disabled={checkRequiredFieldsFilled(item) && item.completed}
                         />
                     </div>
 
