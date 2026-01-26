@@ -9,6 +9,8 @@ import { loadWorkspaceHandle, saveWorkspaceHandle, ensureReadWritePermission } f
 import { Button } from "./components/ui/button";
 import { Separator } from "./components/ui/separator";
 import { ThemeToggle } from "./components/ThemeToggle";
+import { GeoGuessrPage } from "./components/GeoGuessrPage"; // Добавить этот импорт
+
 
 import type { Filters, SortRule } from "./components/FiltersSortDialog";
 import type { MapFilters } from "./components/MapFiltersDialog";
@@ -221,7 +223,6 @@ export default function App() {
                 <div className="p-4 space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="space-y-1">
-                            <div className="text-sm text-muted-foreground">Workspace</div>
                             <div className="text-sm">{workspace ? "Папка выбрана (доступ на запись есть)" : "Не выбрана"}</div>
                         </div>
 
@@ -308,6 +309,17 @@ export default function App() {
                             onChangeMarkerAppearanceRules={(next) => setDb({ ...db, markerAppearanceRules: next })}
                             filters={mapFilters}
                             setFilters={setMapFilters}
+                        />
+                    )}
+
+                    {activeTab === "geoguessr" && (
+                        <GeoGuessrPage
+                            workspace={workspace}
+                            items={db.items}
+                            onOpenObject={(id) => {
+                                setActiveTab("objects");
+                                setOpenId(id);
+                            }}
                         />
                     )}
                 </div>

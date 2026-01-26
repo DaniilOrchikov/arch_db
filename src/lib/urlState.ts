@@ -85,7 +85,7 @@ export function serializeSortRules(p: URLSearchParams, key: string, rules: SortR
 export function parseTabFromUrl(fallback: AppTab = "objects"): AppTab {
     const p = getParams();
     const t = p.get("tab");
-    return t === "map" || t === "objects" || t === "styles" ? t : fallback;
+    return t === "map" || t === "objects" || t === "styles" || t === "geoguessr" ? t : fallback;
 }
 
 export function syncTabToUrl(tab: AppTab) {

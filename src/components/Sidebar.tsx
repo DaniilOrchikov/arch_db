@@ -1,9 +1,9 @@
 // Sidebar.tsx (обновленный)
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
-import { PanelLeftClose, PanelLeftOpen, Database, Map as MapIcon, Palette, Home } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Database, Map as MapIcon, Palette, Home, Gamepad2 } from "lucide-react";
 
-export type AppTab = "objects" | "map" | "styles"; // Добавлена вкладка styles
+export type AppTab = "objects" | "map" | "styles" | "geoguessr"; // Добавлена вкладка geoguessr
 
 export function Sidebar({
                             collapsed,
@@ -73,6 +73,19 @@ export function Sidebar({
                 >
                     <MapIcon size={16} />
                     {!collapsed && <span>Карта</span>}
+                </button>
+
+                <button
+                    type="button"
+                    className={cn(
+                        "w-full rounded-md px-3 py-2 text-sm text-left flex items-center gap-2",
+                        activeTab === "geoguessr" ? "bg-accent text-accent-foreground" : "hover:bg-accent/60"
+                    )}
+                    onClick={() => onChangeTab("geoguessr")}
+                    title="Игра - Угадай здание"
+                >
+                    <Gamepad2 size={16} />
+                    {!collapsed && <span>Угадай здание</span>}
                 </button>
             </div>
 
