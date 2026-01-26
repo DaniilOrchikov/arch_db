@@ -30,7 +30,6 @@ function isFsAccessSupported() {
 }
 
 const DEFAULT_OBJECTS_SORT: SortRule[] = [
-    { id: "sr-1", field: "yearStart", dir: "asc" },
     { id: "sr-2", field: "name", dir: "asc" },
 ];
 

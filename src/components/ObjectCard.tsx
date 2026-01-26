@@ -362,7 +362,7 @@ export function ObjectCard({
                         />
                         <MultiValueInput
                             dense
-                            label="Страны"
+                            label="Страна"
                             placeholder="Начните вводить..."
                             values={item.countries}
                             suggestions={countrySuggestions}
@@ -374,7 +374,7 @@ export function ObjectCard({
                         />
                         <MultiValueInput
                             dense
-                            label="Города"
+                            label="Город"
                             placeholder="Начните вводить..."
                             values={item.cities}
                             suggestions={citySuggestions}

@@ -181,12 +181,10 @@ export function ObjectsPage({
 
         return multiSort(filtered, sortRules);
     }, [items, filters, sortRules]);
-
-    const collapsedItems = useMemo(() => {
+    useMemo(() => {
         if (!openItem) return filteredSorted;
         return filteredSorted.filter((x) => x.id !== openItem.id);
     }, [filteredSorted, openItem]);
-
     const activeFiltersCount =
         (filters.name.trim() ? 1 : 0) +
         (filters.address.trim() ? 1 : 0) +
@@ -266,62 +264,41 @@ export function ObjectsPage({
                 </Button>
             </div>
 
-            {/* Открытая карточка */}
-            {openItem && (
-                <div className="space-y-3">
-                    <ObjectCard
-                        workspace={workspace}
-                        item={openItem}
-                        open={true}
-                        onToggle={() => setOpenId(null)}
-                        onChange={(next) => onChangeItems(items.map((x) => (x.id === openItem.id ? next : x)))}
-                        onDelete={() => {
-                            const next = items.filter((x) => x.id !== openItem.id);
-                            onChangeItems(next);
-                            setOpenId(null);
-                        }}
-                        tagSuggestions={tagSuggestions}
-                        architectSuggestions={architectSuggestions}
-                        styleSuggestions={styleSuggestions}
-
-                        countrySuggestions={countrySuggestions}
-                        citySuggestions={citySuggestions}
-                        hasDuplicateName={() => {
-                            const key = norm(openItem.name);
-                            return key ? (dupMap.get(key) ?? 0) > 1 : false;
-                        }}
-                        onStyleClick={onOpenStyle} // Добавлено: передаем обработчик
-                    />
-                </div>
-            )}
-
             {/* Сетка карточек */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                {collapsedItems.map((it) => {
+                {filteredSorted.map((it) => {
+                    const isOpen = openId === it.id;
                     const key = norm(it.name);
                     const hasDuplicateName = key ? (dupMap.get(key) ?? 0) > 1 : false;
 
                     return (
-                        <ObjectCard
+                        <div
                             key={it.id}
-                            workspace={workspace}
-                            item={it}
-                            open={false}
-                            onToggle={() => setOpenId(it.id)}
-                            onChange={(next) => onChangeItems(items.map((x) => (x.id === it.id ? next : x)))}
-                            onDelete={() => {
-                                const next = items.filter((x) => x.id !== it.id);
-                                onChangeItems(next);
-                                if (openId === it.id) setOpenId(null);
-                            }}
-                            tagSuggestions={tagSuggestions}
-                            architectSuggestions={architectSuggestions}
-                            styleSuggestions={styleSuggestions}
-                            countrySuggestions={countrySuggestions}
-                            citySuggestions={citySuggestions}
-                            hasDuplicateName={hasDuplicateName}
-                            onStyleClick={onOpenStyle} // Добавлено: передаем обработчик
-                        />
+                            className={cn(
+                                // в раскрытом состоянии карточка занимает всю строку сетки
+                                isOpen && "col-span-1 sm:col-span-2 xl:col-span-3"
+                            )}
+                        >
+                            <ObjectCard
+                                workspace={workspace}
+                                item={it}
+                                open={isOpen}
+                                onToggle={() => setOpenId(isOpen ? null : it.id)}
+                                onChange={(next) => onChangeItems(items.map((x) => (x.id === it.id ? next : x)))}
+                                onDelete={() => {
+                                    const next = items.filter((x) => x.id !== it.id);
+                                    onChangeItems(next);
+                                    if (openId === it.id) setOpenId(null);
+                                }}
+                                tagSuggestions={tagSuggestions}
+                                architectSuggestions={architectSuggestions}
+                                styleSuggestions={styleSuggestions}
+                                countrySuggestions={countrySuggestions}
+                                citySuggestions={citySuggestions}
+                                hasDuplicateName={hasDuplicateName}
+                                onStyleClick={onOpenStyle}
+                            />
+                        </div>
                     );
                 })}
             </div>

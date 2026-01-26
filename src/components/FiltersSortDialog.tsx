@@ -51,7 +51,7 @@ export type Filters = {
     yearStartMax: string;
     yearEndMin: string;
     yearEndMax: string;
-    completed: "all" | "completed" | "uncompleted"; // Добавлено: фильтр по статусу
+    completed: "all" | "completed" | "uncompleted";
 };
 
 function fieldLabel(f: SortField) {
@@ -181,14 +181,13 @@ export function FiltersSortDialog({
         (filters.architects.length ? 1 : 0) +
         (filters.styles.length ? 1 : 0) +
         (filters.tags.length ? 1 : 0) +
-        // Новые фильтры
         (filters.countries.length ? 1 : 0) +
         (filters.cities.length ? 1 : 0) +
         (filters.yearStartMin.trim() ? 1 : 0) +
         (filters.yearStartMax.trim() ? 1 : 0) +
         (filters.yearEndMin.trim() ? 1 : 0) +
         (filters.yearEndMax.trim() ? 1 : 0) +
-        (filters.completed !== "all" ? 1 : 0); // Добавлено
+        (filters.completed !== "all" ? 1 : 0);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
