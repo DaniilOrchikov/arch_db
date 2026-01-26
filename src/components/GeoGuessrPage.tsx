@@ -1,16 +1,16 @@
 // GeoGuessrPage.tsx
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import {useMemo, useState, useEffect, useCallback} from "react";
-import { MapContainer, TileLayer, Marker, Polyline, useMapEvents, useMap } from "react-leaflet";
-import type { ArchitectureObject } from "../lib/types";
-import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Separator } from "./ui/separator";
-import { Dialog, DialogContent } from "./ui/dialog";
-import { Maximize2, ExternalLink, Navigation } from "lucide-react";
-import { readWorkspaceFile } from "../lib/photos";
+import {useMemo, useState, useEffect, useCallback, useRef, type SetStateAction} from "react";
+import {MapContainer, TileLayer, Marker, Polyline, useMapEvents, useMap} from "react-leaflet";
+import type {ArchitectureObject} from "../lib/types";
+import {Button} from "./ui/button";
+import {Card, CardContent, CardHeader, CardTitle} from "./ui/card";
+import {Badge} from "./ui/badge";
+import {Separator} from "./ui/separator";
+import {Dialog, DialogContent} from "./ui/dialog";
+import {Maximize2, ExternalLink, Navigation} from "lucide-react";
+import {readWorkspaceFile} from "../lib/photos";
 
 // Fix for leaflet icons
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png?url";
@@ -69,12 +69,12 @@ const userDotIcon = createDotIcon("#3b82f6");
 // Красная точка для правильного местоположения
 const correctDotIcon = createDotIcon("#ef4444");
 
-function FitBounds({ bounds }: { bounds: L.LatLngBounds | null }) {
+function FitBounds({bounds}: { bounds: L.LatLngBounds | null }) {
     const map = useMap();
 
     useEffect(() => {
         if (bounds && bounds.isValid()) {
-            map.fitBounds(bounds, { padding: [50, 50] });
+            map.fitBounds(bounds, {padding: [50, 50]});
         }
     }, [bounds, map]);
 
@@ -82,11 +82,14 @@ function FitBounds({ bounds }: { bounds: L.LatLngBounds | null }) {
 }
 
 // Компонент для обработки кликов по карте
-function ClickHandler({ onClick, disabled }: { onClick: (latlng: { lat: number; lng: number }) => void; disabled: boolean }) {
+function ClickHandler({onClick, disabled}: {
+    onClick: (latlng: { lat: number; lng: number }) => void;
+    disabled: boolean
+}) {
     useMapEvents({
         click(e) {
             if (!disabled) {
-                onClick({ lat: e.latlng.lat, lng: e.latlng.lng });
+                onClick({lat: e.latlng.lat, lng: e.latlng.lng});
             }
         },
     });
@@ -107,7 +110,10 @@ function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: numb
     return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-async function resolvePhoto(workspace: FileSystemDirectoryHandle | null, photo: { type: string; value: string }): Promise<string> {
+async function resolvePhoto(workspace: FileSystemDirectoryHandle | null, photo: {
+    type: string;
+    value: string
+}): Promise<string> {
     if (photo.type === "url") return photo.value;
     if (!workspace) return "";
     try {
@@ -117,6 +123,7 @@ async function resolvePhoto(workspace: FileSystemDirectoryHandle | null, photo: 
         return "";
     }
 }
+
 export function GeoGuessrPage({
                                   workspace,
                                   items,
@@ -134,17 +141,50 @@ export function GeoGuessrPage({
     const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
     const [bounds, setBounds] = useState<L.LatLngBounds | null>(null);
 
+    const [leafletMap, setLeafletMap] = useState<L.Map | null>(null);
+    const savedViewRef = useRef<{ center: L.LatLng; zoom: number } | null>(null);
+
+    const didCenterOnStartRef = useRef(false);
+
     // Новые состояния для отслеживания показанных объектов
     const [usedObjectIds, setUsedObjectIds] = useState<Set<string>>(new Set());
     const [eligibleObjects, setEligibleObjects] = useState<ArchitectureObject[]>([]);
     const [availableCount, setAvailableCount] = useState(0);
 
+    useEffect(() => {
+        if (!leafletMap) return;
+
+        if (photoDialogOpen) {
+            savedViewRef.current = {
+                center: leafletMap.getCenter(),
+                zoom: leafletMap.getZoom(),
+            };
+            return;
+        }
+
+        if (!photoDialogOpen && savedViewRef.current) {
+            const {center, zoom} = savedViewRef.current;
+
+            requestAnimationFrame(() => {
+                leafletMap.invalidateSize();
+
+                requestAnimationFrame(() => {
+                    leafletMap.invalidateSize();
+                    leafletMap.setView(center, zoom, {animate: false});
+                });
+            });
+        }
+    }, [photoDialogOpen, leafletMap]);
+
+    useEffect(() => {
+        didCenterOnStartRef.current = false;
+    }, [currentObject?.id]);
+
+
     // Фильтруем доступные объекты при изменении items
     useEffect(() => {
         const filtered = items.filter(item =>
-            item.completed === true &&
-            item.coordinates.lat != null &&
-            item.coordinates.lng != null &&
+            item.completed && item.coordinates.lat != null && item.coordinates.lng != null &&
             item.photos.length > 0
         );
         setEligibleObjects(filtered);
@@ -245,7 +285,7 @@ export function GeoGuessrPage({
 
     const distance = useMemo(() => {
         if (!userGuess || !currentObject || !currentObject.coordinates.lat || !currentObject.coordinates.lng) return 0;
-        return distanceKm(userGuess, { lat: currentObject.coordinates.lat, lng: currentObject.coordinates.lng });
+        return distanceKm(userGuess, {lat: currentObject.coordinates.lat, lng: currentObject.coordinates.lng});
     }, [userGuess, currentObject]);
 
     // Нейтральный центр карты (океан) и минимальный зум
@@ -286,12 +326,17 @@ export function GeoGuessrPage({
     }, [lineCoordinates]);
 
     // Компонент для центрирования карты при старте игры
-    function CenterMapOnStart({ center, zoom }: { center: [number, number]; zoom: number }) {
+    function CenterMapOnStart({center, zoom}: { center: [number, number]; zoom: number }) {
         const map = useMap();
 
         useEffect(() => {
-            if (gameStarted && !userGuess && !showResult) {
-                map.setView(center, zoom);
+            // важно: центрируем только один раз, иначе любой ререндер (в т.ч. Dialog) будет сбрасывать зум
+            if (!gameStarted) return;
+            if (userGuess || showResult) return;
+
+            if (!didCenterOnStartRef.current) {
+                didCenterOnStartRef.current = true;
+                map.setView(center, zoom, {animate: false});
             }
         }, [map, center, zoom, gameStarted, userGuess, showResult]);
 
@@ -368,7 +413,7 @@ export function GeoGuessrPage({
     }
 
     const correctCoords = currentObject.coordinates.lat && currentObject.coordinates.lng
-        ? { lat: currentObject.coordinates.lat, lng: currentObject.coordinates.lng }
+        ? {lat: currentObject.coordinates.lat, lng: currentObject.coordinates.lng}
         : null;
 
     return (
@@ -392,7 +437,8 @@ export function GeoGuessrPage({
                         Угадайте, где находится это здание на карте
                     </div>
                     <div className="text-sm bg-muted px-3 py-1 rounded-md">
-                        Осталось: <span className="font-bold">{remainingObjectsCount}</span> из <span className="font-bold">{eligibleObjects.length}</span>
+                        Осталось: <span className="font-bold">{remainingObjectsCount}</span> из <span
+                        className="font-bold">{eligibleObjects.length}</span>
                     </div>
                 </div>
             </div>
@@ -420,7 +466,7 @@ export function GeoGuessrPage({
                                             onClick={() => setPhotoDialogOpen(true)}
                                             aria-label="Увеличить фото"
                                         >
-                                            <Maximize2 size={16} />
+                                            <Maximize2 size={16}/>
                                         </button>
                                     </>
                                 ) : (
@@ -433,7 +479,7 @@ export function GeoGuessrPage({
                             {/* Дополнительная информация (показывается после ответа) */}
                             {showResult && (
                                 <div className="space-y-3">
-                                    <Separator />
+                                    <Separator/>
                                     <div className="space-y-2">
                                         <div className="text-sm font-medium">Информация о здании:</div>
                                         <div className="grid grid-cols-2 gap-2">
@@ -469,7 +515,7 @@ export function GeoGuessrPage({
                                             className="w-full"
                                             onClick={() => onOpenObject(currentObject.id)}
                                         >
-                                            <ExternalLink size={16} className="mr-2" />
+                                            <ExternalLink size={16} className="mr-2"/>
                                             Открыть карточку объекта
                                         </Button>
                                     )}
@@ -484,7 +530,7 @@ export function GeoGuessrPage({
                                         onClick={handleConfirmGuess}
                                         disabled={!userGuess}
                                     >
-                                        <Navigation size={16} className="mr-2" />
+                                        <Navigation size={16} className="mr-2"/>
                                         Подтвердить выбор
                                     </Button>
                                 ) : (
@@ -502,10 +548,11 @@ export function GeoGuessrPage({
 
                 {/* Правая колонка - карта */}
                 <div className="lg:col-span-3">
-                    <div className="rounded-md overflow-hidden border" style={{ height: "calc(100vh - 200px)" }}>
+                    <div className="rounded-md overflow-hidden border" style={{height: "calc(100vh - 200px)"}}>
                         <MapContainer
                             center={defaultCenter}
                             zoom={defaultZoom}
+                            whenReady={(e: { target: SetStateAction<L.Map | null>; }) => setLeafletMap(e.target)}
                             style={{ height: "100%", width: "100%", cursor: showResult ? "default" : "crosshair" }}
                             className="z-0"
                         >
@@ -572,11 +619,7 @@ export function GeoGuessrPage({
                 <DialogContent className="max-w-4xl p-0 gap-0">
                     <div className="relative w-full h-[80vh] bg-black">
                         {photoUrl && (
-                            <img
-                                src={photoUrl}
-                                alt={currentObject.name}
-                                className="w-full h-full object-contain"
-                            />
+                            <img src={photoUrl} alt={currentObject.name} className="w-full h-full object-contain" />
                         )}
                         <Button
                             className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white"
