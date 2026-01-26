@@ -1,7 +1,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
-import { useEffect, useMemo, useState } from "react";
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import type { Coordinates } from "../lib/types";
@@ -21,11 +21,60 @@ L.Icon.Default.mergeOptions({
 });
 
 function ClickHandler({ onPick }: { onPick: (c: Coordinates) => void }) {
+    const map = useMap();
+    const isFirstClick = useRef(true);
+
     useMapEvents({
         click(e) {
             onPick({ lat: e.latlng.lat, lng: e.latlng.lng });
+
+            // Если это первый клик (координаты были null), устанавливаем зум 14
+            if (isFirstClick.current) {
+                map.setView(e.latlng, 14);
+                isFirstClick.current = false;
+            }
         },
     });
+
+    // Сбрасываем флаг при монтировании
+    useEffect(() => {
+        isFirstClick.current = true;
+    }, []);
+
+    return null;
+}
+
+// Компонент для установки начальной позиции карты
+function MapInitializer({ center, zoom }: { center: [number, number]; zoom: number }) {
+    const map = useMap();
+    const initialized = useRef(false);
+
+    useEffect(() => {
+        if (!initialized.current) {
+            map.setView(center, zoom);
+            initialized.current = true;
+        }
+    }, [center, zoom, map]);
+
+    return null;
+}
+
+// Компонент для обновления маркера без изменения вида карты
+function MarkerUpdater({ position, previousPosition }: { position: [number, number] | null; previousPosition: [number, number] | null }) {
+    const map = useMap();
+
+    useEffect(() => {
+        // Если позиция изменилась, плавно перемещаем карту только если это не первый клик
+        if (position && previousPosition &&
+            (position[0] !== previousPosition[0] || position[1] !== previousPosition[1])) {
+            // Сохраняем текущий зум
+            const currentZoom = map.getZoom();
+            map.flyTo(position, currentZoom, {
+                duration: 0.5
+            });
+        }
+    }, [position, previousPosition, map]);
+
     return null;
 }
 
@@ -106,11 +155,23 @@ export function MapPicker({
         return [20, 0];
     }, [has, value.lat, value.lng]);
 
+    const zoom = useMemo(() => {
+        return has ? 14 : 2;
+    }, [has]);
+
     const [busy, setBusy] = useState(false);
     const [err, setErr] = useState<string | null>(null);
 
-    const [mapKey, setMapKey] = useState(0);
-    useEffect(() => setMapKey((x) => x + 1), [center[0], center[1]]);
+    // Сохраняем предыдущую позицию для сравнения
+    const previousPosition = useRef<[number, number] | null>(null);
+    const currentPosition = useMemo(() => {
+        return has ? [value.lat as number, value.lng as number] : null;
+    }, [has, value.lat, value.lng]);
+
+    // Обновляем предыдущую позицию при изменении текущей
+    useEffect(() => {
+        previousPosition.current = currentPosition;
+    }, [currentPosition]);
 
     return (
         <div className="space-y-3">
@@ -211,16 +272,21 @@ export function MapPicker({
                 <div className="md:col-span-2">
                     <div className="rounded-md overflow-hidden border aspect-[16/9]">
                         <MapContainer
-                            key={mapKey}
                             center={center}
-                            zoom={has ? 14 : 2}
+                            zoom={zoom}
                             style={{ height: "100%", width: "100%" }}
+                            zoomControl={true}
                         >
                             <TileLayer
                                 attribution="&copy; OpenStreetMap contributors"
                                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                             />
+                            <MapInitializer center={center} zoom={zoom} />
                             <ClickHandler onPick={onChange} />
+                            <MarkerUpdater
+                                position={currentPosition}
+                                previousPosition={previousPosition.current}
+                            />
                             {has && <Marker position={[value.lat as number, value.lng as number]} />}
                         </MapContainer>
                     </div>
