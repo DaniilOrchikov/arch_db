@@ -2,6 +2,7 @@
 import type { AppTab } from "../components/Sidebar";
 import type { Filters, SortRule, SortField } from "../components/FiltersSortDialog";
 import type { MapFilters } from "../components/MapFiltersDialog";
+import type {ArchitectureObject} from "@/lib/types.ts";
 
 function getParams(): URLSearchParams {
     if (typeof window === "undefined") return new URLSearchParams();
@@ -187,18 +188,31 @@ export function syncMapFiltersToUrl(filters: MapFilters) {
 
 export interface GeoGuessrState {
     gameStarted: boolean;
-    currentObjectId: string | null;
+    currentObject: ArchitectureObject | null;
     userGuess: string | null; // формат: "lat,lng"
     showResult: boolean;
     usedObjectIds: string[];
     bounds: string | null; // формат: "lat1,lng1,lat2,lng2"
 }
 
+// Вспомогательные функции для сериализации/десериализации объекта
 export function parseGeoGuessrFromUrl(): GeoGuessrState {
     const p = getParams();
+
+    // Десериализуем объект из JSON
+    const objectStr = p.get("gg_object");
+    let currentObject = null;
+    if (objectStr) {
+        try {
+            currentObject = JSON.parse(decodeURIComponent(objectStr));
+        } catch {
+            currentObject = null;
+        }
+    }
+
     return {
         gameStarted: getString(p, "gg_started", "0") === "1",
-        currentObjectId: getString(p, "gg_current", ""),
+        currentObject,
         userGuess: getString(p, "gg_guess", ""),
         showResult: getString(p, "gg_show_result", "0") === "1",
         usedObjectIds: getArray(p, "gg_used"),
@@ -210,7 +224,15 @@ export function syncGeoGuessrToUrl(state: GeoGuessrState) {
     const p = getParams();
 
     p.set("gg_started", state.gameStarted ? "1" : "0");
-    setString(p, "gg_current", state.currentObjectId || "");
+
+    // Сериализуем объект в JSON
+    if (state.currentObject) {
+        const objectStr = encodeURIComponent(JSON.stringify(state.currentObject));
+        p.set("gg_object", objectStr);
+    } else {
+        p.delete("gg_object");
+    }
+
     setString(p, "gg_guess", state.userGuess || "");
     p.set("gg_show_result", state.showResult ? "1" : "0");
     setArray(p, "gg_used", state.usedObjectIds);

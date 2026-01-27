@@ -1,4 +1,3 @@
-// GeoGuessrPage.tsx
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import {useMemo, useState, useEffect, useCallback, useRef, type SetStateAction} from "react";
@@ -148,13 +147,17 @@ export function GeoGuessrPage({
 
     const didCenterOnStartRef = useRef(false);
 
-    const [isInitializedFromUrl, setIsInitializedFromUrl] = useState(false);
-
     // Новые состояния для отслеживания показанных объектов
     const [usedObjectIds, setUsedObjectIds] = useState<Set<string>>(new Set());
     const [eligibleObjects, setEligibleObjects] = useState<ArchitectureObject[]>([]);
     const [availableCount, setAvailableCount] = useState(0);
 
+    // Добавляем состояние для отслеживания инициализации из URL
+    const [isInitializedFromUrl, setIsInitializedFromUrl] = useState(false);
+    // Состояние для отслеживания загрузки фото
+    const [isPhotoLoading, setIsPhotoLoading] = useState(false);
+
+    // Эффект для восстановления состояния из URL при загрузке
     useEffect(() => {
         if (isInitializedFromUrl) return;
 
@@ -163,21 +166,20 @@ export function GeoGuessrPage({
         if (savedState.gameStarted) {
             setGameStarted(true);
 
-            // Восстанавливаем usedObjectIds
+            // Восстанавливаем использованные ID
             if (savedState.usedObjectIds.length > 0) {
                 setUsedObjectIds(new Set(savedState.usedObjectIds));
             }
 
-            // Восстанавливаем текущий объект, если он есть в items
-            if (savedState.currentObjectId) {
-                const obj = items.find(item => item.id === savedState.currentObjectId);
-                if (obj && obj.completed && obj.coordinates.lat != null && obj.coordinates.lng != null && obj.photos.length > 0) {
-                    setCurrentObject(obj);
-
-                    // Загружаем фото для объекта
-                    if (obj.photos[0]) {
-                        resolvePhoto(workspace, obj.photos[0]).then(setPhotoUrl);
-                    }
+            // Восстанавливаем текущий объект
+            if (savedState.currentObject) {
+                // Проверяем, что объект все еще валиден (есть координаты и фото)
+                if (
+                    savedState.currentObject.coordinates?.lat &&
+                    savedState.currentObject.coordinates?.lng &&
+                    savedState.currentObject.photos?.length > 0
+                ) {
+                    setCurrentObject(savedState.currentObject);
                 }
             }
 
@@ -205,14 +207,45 @@ export function GeoGuessrPage({
         }
 
         setIsInitializedFromUrl(true);
-    }, [items, workspace, isInitializedFromUrl]);
+    }, [isInitializedFromUrl]);
 
+    // Эффект для загрузки фото при изменении currentObject или workspace
+    useEffect(() => {
+        const loadPhoto = async () => {
+            if (!currentObject || !currentObject.photos[0]) {
+                setPhotoUrl("");
+                return;
+            }
+
+            setIsPhotoLoading(true);
+            try {
+                const url = await resolvePhoto(workspace, currentObject.photos[0]);
+                setPhotoUrl(url);
+            } catch (error) {
+                console.error("Failed to load photo:", error);
+                setPhotoUrl("");
+            } finally {
+                setIsPhotoLoading(false);
+            }
+        };
+
+        loadPhoto();
+
+        // Очистка при размонтировании или изменении фото
+        return () => {
+            if (photoUrl && photoUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(photoUrl);
+            }
+        };
+    }, [currentObject?.id, workspace]);
+
+    // Эффект для синхронизации состояния с URL
     useEffect(() => {
         if (!isInitializedFromUrl) return;
 
         const state = {
             gameStarted,
-            currentObjectId: currentObject?.id || null,
+            currentObject,
             userGuess: userGuess ? `${userGuess.lat},${userGuess.lng}` : null,
             showResult,
             usedObjectIds: Array.from(usedObjectIds),
@@ -253,7 +286,6 @@ export function GeoGuessrPage({
         didCenterOnStartRef.current = false;
     }, [currentObject?.id]);
 
-
     // Фильтруем доступные объекты при изменении items
     useEffect(() => {
         const filtered = items.filter(item =>
@@ -262,14 +294,7 @@ export function GeoGuessrPage({
         );
         setEligibleObjects(filtered);
         setAvailableCount(filtered.length);
-
-        // Не сбрасываем usedObjectIds, если они уже были восстановлены из URL
-        // и игра уже начата
-        if (!gameStarted || usedObjectIds.size === 0) {
-            // Если игра не начата или нет сохраненных usedObjectIds,
-            // оставляем логику как есть
-        }
-    }, [items, gameStarted]);
+    }, [items]);
 
     // Получение случайного объекта без повторений
     const getRandomObject = useCallback((): ArchitectureObject | null => {
@@ -287,34 +312,20 @@ export function GeoGuessrPage({
         const randomIndex = Math.floor(Math.random() * unusedObjects.length);
         const selectedObject = unusedObjects[randomIndex];
 
-        // Добавляем ID в использованные
-        setUsedObjectIds(prev => new Set(prev).add(selectedObject.id));
-
         return selectedObject;
     }, [eligibleObjects, usedObjectIds]);
 
     // Инициализация первого объекта при старте игры
     useEffect(() => {
-        if (gameStarted && !currentObject) {
+        if (gameStarted && !currentObject && isInitializedFromUrl) {
             const obj = getRandomObject();
             if (obj) {
+                // Добавляем ID в использованные перед установкой объекта
+                setUsedObjectIds(prev => new Set(prev).add(obj.id));
                 setCurrentObject(obj);
-                // Загружаем первую фотографию
-                if (obj.photos[0]) {
-                    resolvePhoto(workspace, obj.photos[0]).then(setPhotoUrl);
-                }
             }
         }
-    }, [gameStarted, currentObject, getRandomObject, workspace]);
-
-    // Очистка object URL
-    useEffect(() => {
-        return () => {
-            if (photoUrl && photoUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(photoUrl);
-            }
-        };
-    }, [photoUrl]);
+    }, [gameStarted, currentObject, getRandomObject, isInitializedFromUrl]);
 
     const handleMapClick = (latlng: { lat: number; lng: number }) => {
         if (showResult) return;
@@ -331,8 +342,6 @@ export function GeoGuessrPage({
         const correctLatLng = L.latLng(currentObject.coordinates.lat, currentObject.coordinates.lng);
         const newBounds = L.latLngBounds(userLatLng, correctLatLng);
         setBounds(newBounds);
-
-        // Состояние автоматически синхронизируется с URL через useEffect
     };
 
     const handleNext = () => {
@@ -353,11 +362,9 @@ export function GeoGuessrPage({
             return;
         }
 
+        // Добавляем ID в использованные перед установкой объекта
+        setUsedObjectIds(prev => new Set(prev).add(newObj.id));
         setCurrentObject(newObj);
-
-        if (newObj.photos[0]) {
-            resolvePhoto(workspace, newObj.photos[0]).then(setPhotoUrl);
-        }
     };
 
     // Количество оставшихся объектов
@@ -372,14 +379,12 @@ export function GeoGuessrPage({
 
     // Нейтральный центр карты (океан) и минимальный зум
     const defaultCenter: [number, number] = useMemo(() => {
-        // Возвращаем нейтральную позицию (океан в Африке)
         return [20, 0];
     }, []);
 
     // Calculate default zoom - минимальный зум при старте
     const defaultZoom = useMemo(() => {
         if (userGuess || showResult) return 3;
-        // При старте игры показываем максимально широкий вид
         return 2;
     }, [userGuess, showResult]);
 
@@ -412,7 +417,6 @@ export function GeoGuessrPage({
         const map = useMap();
 
         useEffect(() => {
-            // важно: центрируем только один раз, иначе любой ререндер (в т.ч. Dialog) будет сбрасывать зум
             if (!gameStarted) return;
             if (userGuess || showResult) return;
 
@@ -441,7 +445,7 @@ export function GeoGuessrPage({
         // Очищаем состояние в URL
         syncGeoGuessrToUrl({
             gameStarted: false,
-            currentObjectId: null,
+            currentObject: null,
             userGuess: null,
             showResult: false,
             usedObjectIds: [],
@@ -545,7 +549,11 @@ export function GeoGuessrPage({
                         <CardContent className="space-y-4">
                             {/* Фотография */}
                             <div className="relative aspect-square rounded-md overflow-hidden bg-muted">
-                                {photoUrl ? (
+                                {isPhotoLoading ? (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <p className="text-muted-foreground">Загрузка фото...</p>
+                                    </div>
+                                ) : photoUrl ? (
                                     <>
                                         <img
                                             src={photoUrl}
