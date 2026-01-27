@@ -7,6 +7,12 @@ import { Plus, SlidersHorizontal } from "lucide-react";
 import { cn } from "../lib/utils";
 import { FiltersSortDialog, type Filters, type SortRule } from "./FiltersSortDialog";
 
+function compareStringArray(a: string[], b: string[]) {
+    const aFirst = a[0] || "";
+    const bFirst = b[0] || "";
+    return aFirst.localeCompare(bFirst, undefined, { sensitivity: "base" });
+}
+
 function uniqSorted(values: string[]) {
     const s = new Set(values.map((x) => x.trim()).filter(Boolean));
     return Array.from(s).sort((a, b) => a.localeCompare(b));
@@ -57,6 +63,14 @@ function multiSort(items: ArchitectureObject[], rules: SortRule[]) {
                 cmp = compareNullableNumber(a.yearStart ?? null, b.yearStart ?? null);
             } else if (r.field === "yearEnd") {
                 cmp = compareNullableNumber(a.yearEnd ?? null, b.yearEnd ?? null);
+            } else if (r.field === "countries") {
+                cmp = compareStringArray(a.countries, b.countries);
+            } else if (r.field === "cities") {
+                cmp = compareStringArray(a.cities, b.cities);
+            } else if (r.field === "styles") {
+                cmp = compareStringArray(a.styles, b.styles);
+            } else if (r.field === "tags") {
+                cmp = compareStringArray(a.tags, b.tags);
             }
 
             if (cmp !== 0) return r.dir === "asc" ? cmp : -cmp;

@@ -43,8 +43,11 @@ function setArray(p: URLSearchParams, key: string, values: string[]) {
     else p.set(key, v.map((x) => encodeURIComponent(x)).join("|"));
 }
 
+// Обновляем функцию isSortField
 function isSortField(x: string): x is SortField {
-    return x === "name" || x === "yearStart" || x === "yearEnd";
+    return x === "name" || x === "yearStart" || x === "yearEnd" ||
+        x === "countries" || x === "cities" ||
+        x === "styles" || x === "tags";
 }
 
 export function parseSortRules(p: URLSearchParams, key: string, fallback: SortRule[]): SortRule[] {

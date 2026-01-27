@@ -31,7 +31,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
-export type SortField = "name" | "yearStart" | "yearEnd";
+export type SortField = "name" | "yearStart" | "yearEnd" | "countries" | "cities" | "styles" | "tags";
 export type SortRule = { id: string; field: SortField; dir: "asc" | "desc" };
 
 export type Filters = {
@@ -57,7 +57,11 @@ export type Filters = {
 function fieldLabel(f: SortField) {
     if (f === "name") return "Название";
     if (f === "yearStart") return "Год начала";
-    return "Год окончания";
+    if (f === "yearEnd") return "Год окончания";
+    if (f === "countries") return "Страна";
+    if (f === "cities") return "Город";
+    if (f === "styles") return "Стиль";
+    return "Тег";
 }
 
 function SortableRuleRow({
@@ -99,9 +103,6 @@ function SortableRuleRow({
 
             <div className="min-w-0 flex-1">
                 <div className="text-sm font-medium truncate">{fieldLabel(rule.field)}</div>
-                <div className="text-xs text-muted-foreground">
-                    Приоритет выше — сортируется раньше
-                </div>
             </div>
 
             <Button type="button" variant="secondary" size="sm" onClick={onToggleDir}>
@@ -152,7 +153,8 @@ export function FiltersSortDialog({
 
     const usedFields = useMemo(() => new Set(sortRules.map((r) => r.field)), [sortRules]);
     const availableFields: SortField[] = useMemo(
-        () => (["yearStart", "yearEnd", "name"] as SortField[]).filter((f) => !usedFields.has(f)),
+        () => (["yearStart", "yearEnd", "name", "countries", "cities", "styles", "tags"] as SortField[])
+            .filter((f) => !usedFields.has(f)),
         [usedFields]
     );
 
