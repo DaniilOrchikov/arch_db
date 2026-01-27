@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import { PanelLeftClose, PanelLeftOpen, Database, Map as MapIcon, Palette, Home, Gamepad2 } from "lucide-react";
 
-export type AppTab = "objects" | "map" | "styles" | "geoguessr"; // Добавлена вкладка geoguessr
+export type AppTab = "objects" | "map" | "styles" | "geoguessr";
 
 export function Sidebar({
                             collapsed,

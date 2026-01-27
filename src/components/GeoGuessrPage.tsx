@@ -11,6 +11,8 @@ import {Separator} from "./ui/separator";
 import {Dialog, DialogContent} from "./ui/dialog";
 import {Maximize2, ExternalLink, Navigation} from "lucide-react";
 import {readWorkspaceFile} from "../lib/photos";
+import { parseGeoGuessrFromUrl, syncGeoGuessrToUrl } from "../lib/urlState";
+
 
 // Fix for leaflet icons
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png?url";
@@ -146,10 +148,81 @@ export function GeoGuessrPage({
 
     const didCenterOnStartRef = useRef(false);
 
+    const [isInitializedFromUrl, setIsInitializedFromUrl] = useState(false);
+
     // Новые состояния для отслеживания показанных объектов
     const [usedObjectIds, setUsedObjectIds] = useState<Set<string>>(new Set());
     const [eligibleObjects, setEligibleObjects] = useState<ArchitectureObject[]>([]);
     const [availableCount, setAvailableCount] = useState(0);
+
+    useEffect(() => {
+        if (isInitializedFromUrl) return;
+
+        const savedState = parseGeoGuessrFromUrl();
+
+        if (savedState.gameStarted) {
+            setGameStarted(true);
+
+            // Восстанавливаем usedObjectIds
+            if (savedState.usedObjectIds.length > 0) {
+                setUsedObjectIds(new Set(savedState.usedObjectIds));
+            }
+
+            // Восстанавливаем текущий объект, если он есть в items
+            if (savedState.currentObjectId) {
+                const obj = items.find(item => item.id === savedState.currentObjectId);
+                if (obj && obj.completed && obj.coordinates.lat != null && obj.coordinates.lng != null && obj.photos.length > 0) {
+                    setCurrentObject(obj);
+
+                    // Загружаем фото для объекта
+                    if (obj.photos[0]) {
+                        resolvePhoto(workspace, obj.photos[0]).then(setPhotoUrl);
+                    }
+                }
+            }
+
+            // Восстанавливаем предположение пользователя
+            if (savedState.userGuess) {
+                const [lat, lng] = savedState.userGuess.split(',').map(Number);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    setUserGuess({ lat, lng });
+                }
+            }
+
+            // Восстанавливаем состояние результата
+            setShowResult(savedState.showResult);
+
+            // Восстанавливаем границы карты
+            if (savedState.bounds) {
+                const [lat1, lng1, lat2, lng2] = savedState.bounds.split(',').map(Number);
+                if (!isNaN(lat1) && !isNaN(lng1) && !isNaN(lat2) && !isNaN(lng2)) {
+                    const bounds = L.latLngBounds([lat1, lng1], [lat2, lng2]);
+                    if (bounds.isValid()) {
+                        setBounds(bounds);
+                    }
+                }
+            }
+        }
+
+        setIsInitializedFromUrl(true);
+    }, [items, workspace, isInitializedFromUrl]);
+
+    useEffect(() => {
+        if (!isInitializedFromUrl) return;
+
+        const state = {
+            gameStarted,
+            currentObjectId: currentObject?.id || null,
+            userGuess: userGuess ? `${userGuess.lat},${userGuess.lng}` : null,
+            showResult,
+            usedObjectIds: Array.from(usedObjectIds),
+            bounds: bounds ?
+                `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}` :
+                null,
+        };
+
+        syncGeoGuessrToUrl(state);
+    }, [gameStarted, currentObject, userGuess, showResult, usedObjectIds, bounds, isInitializedFromUrl]);
 
     useEffect(() => {
         if (!leafletMap) return;
@@ -189,7 +262,14 @@ export function GeoGuessrPage({
         );
         setEligibleObjects(filtered);
         setAvailableCount(filtered.length);
-    }, [items]);
+
+        // Не сбрасываем usedObjectIds, если они уже были восстановлены из URL
+        // и игра уже начата
+        if (!gameStarted || usedObjectIds.size === 0) {
+            // Если игра не начата или нет сохраненных usedObjectIds,
+            // оставляем логику как есть
+        }
+    }, [items, gameStarted]);
 
     // Получение случайного объекта без повторений
     const getRandomObject = useCallback((): ArchitectureObject | null => {
@@ -251,6 +331,8 @@ export function GeoGuessrPage({
         const correctLatLng = L.latLng(currentObject.coordinates.lat, currentObject.coordinates.lng);
         const newBounds = L.latLngBounds(userLatLng, correctLatLng);
         setBounds(newBounds);
+
+        // Состояние автоматически синхронизируется с URL через useEffect
     };
 
     const handleNext = () => {
@@ -355,6 +437,16 @@ export function GeoGuessrPage({
             URL.revokeObjectURL(photoUrl);
         }
         setPhotoUrl("");
+
+        // Очищаем состояние в URL
+        syncGeoGuessrToUrl({
+            gameStarted: false,
+            currentObjectId: null,
+            userGuess: null,
+            showResult: false,
+            usedObjectIds: [],
+            bounds: null,
+        });
     };
 
     if (!gameStarted) {

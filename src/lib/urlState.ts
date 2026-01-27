@@ -184,3 +184,37 @@ export function syncMapFiltersToUrl(filters: MapFilters) {
 
     replaceParams(p);
 }
+
+export interface GeoGuessrState {
+    gameStarted: boolean;
+    currentObjectId: string | null;
+    userGuess: string | null; // формат: "lat,lng"
+    showResult: boolean;
+    usedObjectIds: string[];
+    bounds: string | null; // формат: "lat1,lng1,lat2,lng2"
+}
+
+export function parseGeoGuessrFromUrl(): GeoGuessrState {
+    const p = getParams();
+    return {
+        gameStarted: getString(p, "gg_started", "0") === "1",
+        currentObjectId: getString(p, "gg_current", ""),
+        userGuess: getString(p, "gg_guess", ""),
+        showResult: getString(p, "gg_show_result", "0") === "1",
+        usedObjectIds: getArray(p, "gg_used"),
+        bounds: getString(p, "gg_bounds", ""),
+    };
+}
+
+export function syncGeoGuessrToUrl(state: GeoGuessrState) {
+    const p = getParams();
+
+    p.set("gg_started", state.gameStarted ? "1" : "0");
+    setString(p, "gg_current", state.currentObjectId || "");
+    setString(p, "gg_guess", state.userGuess || "");
+    p.set("gg_show_result", state.showResult ? "1" : "0");
+    setArray(p, "gg_used", state.usedObjectIds);
+    setString(p, "gg_bounds", state.bounds || "");
+
+    replaceParams(p);
+}
