@@ -49,17 +49,17 @@ export function StylesPage({
         }));
     }, [styles, objectsMap]);
 
-    // Состояние для открытой карточки
+    // Состояние для открытой карточки в неконтролируемом режиме
     const [internalOpenId, setInternalOpenId] = useState<string | null>(null);
-
-    // Синхронизируем с внешним состоянием
-    useEffect(() => {
-        if (openStyleId !== undefined) {
-            setInternalOpenId(openStyleId);
+    const effectiveOpenId = openStyleId !== undefined ? openStyleId : internalOpenId;
+    const setOpenId = useCallback((id: string | null) => {
+        if (openStyleId === undefined) {
+            setInternalOpenId(id);
         }
-    }, [openStyleId]);
+        onOpenStyle?.(id);
+    }, [openStyleId, onOpenStyle]);
 
-    const openStyle = internalOpenId ? styles.find(s => s.id === internalOpenId) ?? null : null;
+    const openStyle = effectiveOpenId ? styles.find(s => s.id === effectiveOpenId) ?? null : null;
 
     const collapsedStyles = useMemo(() => {
         if (!openStyle) return stylesWithObjects;
@@ -81,11 +81,8 @@ export function StylesPage({
             linkedObjects: []
         };
         onChangeStyles([newStyle, ...styles]);
-        setInternalOpenId(id);
-        if (onOpenStyle) {
-            onOpenStyle(id);
-        }
-    }, [styles, onChangeStyles, onOpenStyle]);
+        setOpenId(id);
+    }, [styles, onChangeStyles, setOpenId]);
 
     const handleChangeStyle = useCallback((styleId: string, updates: Partial<Style>) => {
         const updated = styles.map(s => s.id === styleId ? { ...s, ...updates } : s);
@@ -95,22 +92,16 @@ export function StylesPage({
     const handleDeleteStyle = useCallback((styleId: string) => {
         const next = styles.filter(s => s.id !== styleId);
         onChangeStyles(next);
-        if (internalOpenId === styleId) {
-            setInternalOpenId(null);
-            if (onOpenStyle) {
-                onOpenStyle(null);
-            }
+        if (effectiveOpenId === styleId) {
+            setOpenId(null);
         }
-    }, [styles, internalOpenId, onChangeStyles, onOpenStyle]);
+    }, [styles, effectiveOpenId, onChangeStyles, setOpenId]);
 
     // Обработчик переключения карточки стиля
     const handleToggleStyle = useCallback((styleId: string) => {
-        const newOpenId = internalOpenId === styleId ? null : styleId;
-        setInternalOpenId(newOpenId);
-        if (onOpenStyle) {
-            onOpenStyle(newOpenId);
-        }
-    }, [internalOpenId, onOpenStyle]);
+        const newOpenId = effectiveOpenId === styleId ? null : styleId;
+        setOpenId(newOpenId);
+    }, [effectiveOpenId, setOpenId]);
 
     return (
         <div className="space-y-4">

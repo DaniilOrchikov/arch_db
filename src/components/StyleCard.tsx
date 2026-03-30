@@ -107,9 +107,6 @@ export function StyleCard({
     linkedObjects: ArchitectureObject[];
     onOpenObject: (id: string) => void;
 }) {
-    const [localOpen, setLocalOpen] = useState(open);
-    useEffect(() => setLocalOpen(open), [open]);
-
     const [thumb, setThumb] = useState<string>("");
     const prevThumbRef = useRef<string>("");
 
@@ -168,11 +165,11 @@ export function StyleCard({
             <CardHeader
                 className={cn(
                     "cursor-pointer select-none p-3",
-                    localOpen && "pb-2"
+                    open && "pb-2"
                 )}
                 onClick={onToggle}
             >
-                {!localOpen ? (
+                {!open ? (
                     // Свернутое состояние
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
@@ -238,7 +235,7 @@ export function StyleCard({
                 )}
             </CardHeader>
 
-            {localOpen && (
+            {open && (
                 <CardContent className="space-y-4">
                     {/* Название стиля */}
                     <div className="space-y-1">

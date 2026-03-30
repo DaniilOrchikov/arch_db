@@ -29,6 +29,10 @@ function isFsAccessSupported() {
     return typeof window !== "undefined" && "showDirectoryPicker" in window;
 }
 
+type DirectoryPickerWindow = Window & {
+    showDirectoryPicker: (options?: { mode?: "read" | "readwrite" }) => Promise<FileSystemDirectoryHandle>;
+};
+
 const DEFAULT_OBJECTS_SORT: SortRule[] = [
     { id: "sr-1", field: "countries", dir: "asc" },
     { id: "sr-2", field: "cities", dir: "asc" },
@@ -162,7 +166,6 @@ export default function App() {
         if (serialized === lastSerialized.current) return;
 
         if (saveTimer.current) window.clearTimeout(saveTimer.current);
-        setStatus({ kind: "saving", message: "Сохранение..." });
 
         saveTimer.current = window.setTimeout(async () => {
             try {
@@ -178,14 +181,6 @@ export default function App() {
             if (saveTimer.current) window.clearTimeout(saveTimer.current);
         };
     }, [db, workspace]);
-
-    // Обновление связей стилей при изменении объектов
-    useEffect(() => {
-        const updatedStyles = updateStyleRelationships(db.items, db.styles);
-        if (JSON.stringify(updatedStyles) !== JSON.stringify(db.styles)) {
-            setDb(prev => ({ ...prev, styles: updatedStyles }));
-        }
-    }, [db.items]);
 
     const duplicateNames = useMemo(() => {
         const m = new Map<string, number>();
@@ -237,7 +232,7 @@ export default function App() {
                                 variant="outline"
                                 onClick={async () => {
                                     if (!isFsAccessSupported()) return;
-                                    const h = await (window as any).showDirectoryPicker({ mode: "readwrite" });
+                                    const h = await (window as unknown as DirectoryPickerWindow).showDirectoryPicker({ mode: "readwrite" });
                                     const ok = await ensureReadWritePermission(h);
                                     if (!ok) return;
 
@@ -277,7 +272,10 @@ export default function App() {
                             items={db.items}
                             openId={openId}
                             setOpenId={setOpenId}
-                            onChangeItems={(next) => setDb({ ...db, items: next })}
+                            onChangeItems={(next) => {
+                                const updatedStyles = updateStyleRelationships(next, db.styles);
+                                setDb({ ...db, items: next, styles: updatedStyles });
+                            }}
                             filters={objectsFilters}
                             setFilters={setObjectsFilters}
                             sortRules={objectsSortRules}

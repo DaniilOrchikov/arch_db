@@ -18,7 +18,8 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png?url";
 import markerIcon from "leaflet/dist/images/marker-icon.png?url";
 import markerShadow from "leaflet/dist/images/marker-shadow.png?url";
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+type IconDefaultWithGetIconUrl = L.Icon.Default & { _getIconUrl?: unknown };
+delete (L.Icon.Default.prototype as IconDefaultWithGetIconUrl)._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: markerIcon2x,
     iconUrl: markerIcon,

@@ -21,7 +21,7 @@ export function MarkerColorRulesEditor({
     tagSuggestions: string[];
     styleSuggestions: string[];
 }) {
-    const safeRules: MarkerAppearanceRules = rules ?? { tagIcons: {}, styleColors: {} };
+    const safeRules = useMemo<MarkerAppearanceRules>(() => rules ?? { tagIcons: {}, styleColors: {} }, [rules]);
 
     const [kind, setKind] = useState<Kind>("tagIcons");
     const [key, setKey] = useState("");

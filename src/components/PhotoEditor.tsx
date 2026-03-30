@@ -77,17 +77,13 @@ export function PhotoEditor({
         };
     }, []);
 
-    useEffect(() => {
-        if (!photos.length) {
-            setViewerOpen(false);
-            setActiveIdx(0);
-            return;
-        }
-        if (activeIdx > photos.length - 1) setActiveIdx(photos.length - 1);
-    }, [photos.length, activeIdx]);
-
-    const active = useMemo(() => photos[activeIdx], [photos, activeIdx]);
-    const activeSrc = resolvedList[activeIdx]?.src ?? "";
+    const safeActiveIdx = useMemo(() => {
+        if (photos.length === 0) return 0;
+        return Math.min(activeIdx, photos.length - 1);
+    }, [activeIdx, photos.length]);
+    const isViewerOpen = viewerOpen && photos.length > 0;
+    const active = useMemo(() => photos[safeActiveIdx], [photos, safeActiveIdx]);
+    const activeSrc = resolvedList[safeActiveIdx]?.src ?? "";
 
     async function addFiles(files: File[]) {
         if (!files.length) return;
@@ -121,7 +117,7 @@ export function PhotoEditor({
     // Обработчик клавиатуры для навигации
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (!viewerOpen) return;
+            if (!isViewerOpen) return;
 
             if (e.key === "ArrowLeft") {
                 e.preventDefault();
@@ -136,7 +132,7 @@ export function PhotoEditor({
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [viewerOpen, photos.length]);
+    }, [isViewerOpen, goToNext, goToPrev]);
 
     return (
         <div className="space-y-3">
@@ -225,7 +221,7 @@ export function PhotoEditor({
             </div>
 
             {/* Fullscreen viewer */}
-            <Dialog open={viewerOpen} onOpenChange={setViewerOpen}>
+            <Dialog open={isViewerOpen} onOpenChange={setViewerOpen}>
                 <DialogContent className="p-0 gap-0 w-screen h-[100dvh] max-w-none sm:rounded-none">
                     <DialogTitle className="sr-only">Просмотр фото</DialogTitle>
                     <DialogDescription className="sr-only">Полноэкранный просмотр изображения</DialogDescription>
@@ -234,7 +230,7 @@ export function PhotoEditor({
                         {/* top bar */}
                         <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-2 p-3 bg-gradient-to-b from-black/60 to-transparent">
                             <div className="text-xs text-white/80">
-                                {photos.length ? `Фото ${activeIdx + 1} из ${photos.length}` : ""}
+                                {photos.length ? `Фото ${safeActiveIdx + 1} из ${photos.length}` : ""}
                             </div>
 
                             <div className="ml-auto flex items-center gap-2">
@@ -244,13 +240,13 @@ export function PhotoEditor({
                                         variant="destructive"
                                         size="sm"
                                         onClick={async () => {
-                                            const cur = photos[activeIdx];
+                                            const cur = photos[safeActiveIdx];
 
                                             if (cur?.type === "file" && workspace) {
                                                 await deleteWorkspaceFile(workspace, cur.value);
                                             }
 
-                                            const next = photos.filter((_, i) => i !== activeIdx);
+                                            const next = photos.filter((_, i) => i !== safeActiveIdx);
                                             onChange(next);
 
                                             if (next.length === 0) {

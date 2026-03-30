@@ -14,7 +14,8 @@ import markerShadow from "leaflet/dist/images/marker-shadow.png?url";
 
 const EMPTY_RULES: MarkerAppearanceRules = { tagIcons: {}, styleColors: {} };
 
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+type IconDefaultWithGetIconUrl = L.Icon.Default & { _getIconUrl?: unknown };
+delete (L.Icon.Default.prototype as IconDefaultWithGetIconUrl)._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: markerIcon2x,
     iconUrl: markerIcon,

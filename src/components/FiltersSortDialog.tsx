@@ -30,6 +30,7 @@ import {
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { v4 as uuidv4 } from "uuid";
 
 export type SortField = "name" | "yearStart" | "yearEnd" | "countries" | "cities" | "styles" | "tags";
 export type SortRule = { id: string; field: SortField; dir: "asc" | "desc" };
@@ -160,7 +161,7 @@ export function FiltersSortDialog({
     );
 
     function addSortRule(field: SortField) {
-        const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+        const id = uuidv4();
         setSortRules([...sortRules, { id, field, dir: "asc" }]);
     }
 

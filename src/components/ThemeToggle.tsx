@@ -2,29 +2,9 @@ import { Moon, Sun } from "lucide-react";
 import { Button } from "./ui/button";
 import { useTheme } from "../hooks/useTheme";
 import { cn } from "../lib/utils";
-import { useEffect, useState } from "react";
 
 export function ThemeToggle({ className }: { className?: string }) {
     const { theme, toggleTheme } = useTheme();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
-
-    if (!mounted) {
-        return (
-            <Button
-                variant="outline"
-                size="icon"
-                className={cn("w-9 h-9", className)}
-                disabled
-            >
-                <div className="h-4 w-4" />
-                <span className="sr-only">Загрузка темы</span>
-            </Button>
-        );
-    }
 
     return (
         <Button
