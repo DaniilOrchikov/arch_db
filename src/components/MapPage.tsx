@@ -219,6 +219,10 @@ export function MapPage({
             if (!matchAnySelected(it.countries, filters.countries)) return false;
             if (!matchAnySelected(it.cities, filters.cities)) return false;
 
+            // Фильтр по избранному
+            if (filters.favorite === "favorite" && !it.favorite) return false;
+            if (filters.favorite === "not_favorite" && it.favorite) return false;
+
             if (center && radiusKm !== null) {
                 if (!hasCoords(it.coordinates)) return false;
                 const d = distanceKm(center, { lat: it.coordinates.lat as number, lng: it.coordinates.lng as number });
@@ -227,7 +231,7 @@ export function MapPage({
 
             return true;
         });
-    }, [items, filters.architects, filters.styles, filters.tags, filters.countries, filters.cities, center, radiusKm]);
+    }, [items, filters.architects, filters.styles, filters.tags, filters.countries, filters.cities, filters.favorite, center, radiusKm]); // Добавлен filters.favorite
 
     const markers = useMemo(() => filtered.filter((it) => hasCoords(it.coordinates)), [filtered]);
 
@@ -244,11 +248,11 @@ export function MapPage({
         (filters.architects.length ? 1 : 0) +
         (filters.styles.length ? 1 : 0) +
         (filters.tags.length ? 1 : 0) +
-        // Новые фильтры
         (filters.countries.length ? 1 : 0) +
         (filters.cities.length ? 1 : 0) +
         (filters.radiusKm.trim() ? 1 : 0) +
-        (center ? 1 : 0);
+        (center ? 1 : 0) +
+        (filters.favorite !== "all" ? 1 : 0);
 
     return (
         <div className="space-y-3">

@@ -168,6 +168,10 @@ export function ObjectsPage({
             if (filters.completed === "completed" && !it.completed) return false;
             if (filters.completed === "uncompleted" && it.completed) return false;
 
+            // Фильтр по избранному
+            if (filters.favorite === "favorite" && !it.favorite) return false;
+            if (filters.favorite === "not_favorite" && it.favorite) return false;
+
             // years
             const ys = it.yearStart ?? null;
             const ye = it.yearEnd ?? null;
@@ -267,7 +271,8 @@ export function ObjectsPage({
                             description: "",
                             photos: [],
                             thoughts: "",
-                            completed: false, // Добавлено: по умолчанию незавершен
+                            completed: false,
+                            favorite: false
                         };
                         onChangeItems([empty, ...items]);
                         setOpenId(id);

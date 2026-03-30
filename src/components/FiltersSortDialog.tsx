@@ -52,6 +52,7 @@ export type Filters = {
     yearEndMin: string;
     yearEndMax: string;
     completed: "all" | "completed" | "uncompleted";
+    favorite: "all" | "favorite" | "not_favorite";
 };
 
 function fieldLabel(f: SortField) {
@@ -189,7 +190,8 @@ export function FiltersSortDialog({
         (filters.yearStartMax.trim() ? 1 : 0) +
         (filters.yearEndMin.trim() ? 1 : 0) +
         (filters.yearEndMax.trim() ? 1 : 0) +
-        (filters.completed !== "all" ? 1 : 0);
+        (filters.completed !== "all" ? 1 : 0) +
+        (filters.favorite !== "all" ? 1 : 0);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -319,6 +321,26 @@ export function FiltersSortDialog({
                             </Select>
                         </div>
 
+                        {/* Фильтр по избранному */}
+                        <div className="grid grid-cols-1 gap-2">
+                            <div className="text-xs font-medium text-muted-foreground">Избранное</div>
+                            <Select
+                                value={filters.favorite}
+                                onValueChange={(value: "all" | "favorite" | "not_favorite") =>
+                                    setFilters({ ...filters, favorite: value })
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Выберите статус избранного" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Все объекты</SelectItem>
+                                    <SelectItem value="favorite">Только избранные</SelectItem>
+                                    <SelectItem value="not_favorite">Только не избранные</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         <div className="flex flex-wrap gap-2">
                             <Button
                                 type="button"
@@ -333,14 +355,14 @@ export function FiltersSortDialog({
                                         architects: [],
                                         styles: [],
                                         tags: [],
-
                                         countries: [],
                                         cities: [],
                                         yearStartMin: "",
                                         yearStartMax: "",
                                         yearEndMin: "",
                                         yearEndMax: "",
-                                        completed: "all", // Сброс к значению по умолчанию
+                                        completed: "all",
+                                        favorite: "all",
                                     })
                                 }
                             >

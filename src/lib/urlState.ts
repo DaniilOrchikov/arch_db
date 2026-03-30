@@ -117,7 +117,8 @@ export function parseObjectsFiltersFromUrl(): Filters {
         yearStartMax: getString(p, "o_ysMax", ""),
         yearEndMin: getString(p, "o_yeMin", ""),
         yearEndMax: getString(p, "o_yeMax", ""),
-        completed: (getString(p, "o_completed", "all") as "all" | "completed" | "uncompleted") || "all", // Добавлено
+        completed: (getString(p, "o_completed", "all") as "all" | "completed" | "uncompleted") || "all",
+        favorite: (getString(p, "o_favorite", "all") as "all" | "favorite" | "not_favorite") || "all",
     };
 }
 
@@ -141,11 +142,16 @@ export function syncObjectsFiltersToUrl(filters: Filters) {
     setString(p, "o_yeMin", filters.yearEndMin);
     setString(p, "o_yeMax", filters.yearEndMax);
 
-    // Добавлено: синхронизация фильтра статуса
     if (filters.completed && filters.completed !== "all") {
         p.set("o_completed", filters.completed);
     } else {
         p.delete("o_completed");
+    }
+
+    if (filters.favorite && filters.favorite !== "all") {
+        p.set("o_favorite", filters.favorite);
+    } else {
+        p.delete("o_favorite");
     }
 
     replaceParams(p);
@@ -171,6 +177,7 @@ export function parseMapFiltersFromUrl(): MapFilters {
         countries: getArray(p, "m_countries"),
         cities: getArray(p, "m_cities"),
         radiusKm: getString(p, "m_radiusKm", ""),
+        favorite: (getString(p, "m_favorite", "all") as "all" | "favorite" | "not_favorite") || "all",
     };
 }
 
@@ -185,6 +192,12 @@ export function syncMapFiltersToUrl(filters: MapFilters) {
     setArray(p, "m_cities", filters.cities);
 
     setString(p, "m_radiusKm", filters.radiusKm);
+
+    if (filters.favorite && filters.favorite !== "all") {
+        p.set("m_favorite", filters.favorite);
+    } else {
+        p.delete("m_favorite");
+    }
 
     replaceParams(p);
 }

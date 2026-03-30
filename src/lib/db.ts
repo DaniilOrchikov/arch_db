@@ -1,4 +1,3 @@
-// db.ts (обновленный)
 import type {ArchitectureObject, DbFile, MarkerAppearanceRules, Style} from "./types";
 
 export const DB_FILENAME = "db.json";
@@ -25,7 +24,7 @@ export function emptyStyle(): Style {
 
 export function emptyDb(): DbFile {
     return {
-        version: 4,
+        version: 5,
         items: [],
         styles: [],
         markerAppearanceRules: emptyMarkerAppearanceRules()
@@ -43,34 +42,36 @@ export async function readDb(workspace: FileSystemDirectoryHandle): Promise<DbFi
         const text = await file.text();
         const parsed = JSON.parse(text) as any;
 
-        // v1 -> v4
+        // v1 -> v5
         if (parsed && parsed.version === 1 && Array.isArray(parsed.items)) {
             const migrated: DbFile = {
-                version: 4,
+                version: 5,
                 items: parsed.items.map((item: any) => ({
                     ...item,
                     countries: [],
                     cities: [],
                     completed: false,
+                    favorite: false, // Добавлено
                 })),
-                styles: [], // Новое поле
+                styles: [],
                 markerAppearanceRules: emptyMarkerAppearanceRules(),
             };
             await writeDb(workspace, migrated);
             return migrated;
         }
 
-        // v2 -> v4
+        // v2 -> v5
         if (parsed && parsed.version === 2 && Array.isArray(parsed.items)) {
             const migrated: DbFile = {
-                version: 4,
+                version: 5,
                 items: parsed.items.map((item: any) => ({
                     ...item,
                     countries: item.countries || [],
                     cities: item.cities || [],
                     completed: item.completed || false,
+                    favorite: false, // Добавлено
                 })),
-                styles: [], // Новое поле
+                styles: [],
                 markerAppearanceRules: {
                     tagIcons: {},
                     styleColors: parsed.markerColorRules?.styles ?? {},
@@ -80,17 +81,18 @@ export async function readDb(workspace: FileSystemDirectoryHandle): Promise<DbFi
             return migrated;
         }
 
-        // v3 -> v4 (добавляем styles)
+        // v3 -> v5 (добавляем styles и favorite)
         if (parsed && parsed.version === 3 && Array.isArray(parsed.items)) {
             const migrated: DbFile = {
-                version: 4,
+                version: 5,
                 items: parsed.items.map((item: any) => ({
                     ...item,
                     countries: item.countries || [],
                     cities: item.cities || [],
                     completed: item.completed || false,
+                    favorite: false, // Добавлено
                 })),
-                styles: parsed.styles || [], // Переносим существующие стили или пустой массив
+                styles: parsed.styles || [],
                 markerAppearanceRules: {
                     tagIcons: parsed.markerAppearanceRules?.tagIcons ?? {},
                     styleColors: parsed.markerAppearanceRules?.styleColors ?? {},
@@ -100,17 +102,43 @@ export async function readDb(workspace: FileSystemDirectoryHandle): Promise<DbFi
             return migrated;
         }
 
-        if (!parsed || parsed.version !== 4 || !Array.isArray(parsed.items) || !parsed.markerAppearanceRules) {
+        // v4 -> v5 (добавляем favorite)
+        if (parsed && parsed.version === 4 && Array.isArray(parsed.items)) {
+            const migrated: DbFile = {
+                version: 5,
+                items: parsed.items.map((item: any) => ({
+                    ...item,
+                    favorite: item.favorite || false, // Добавлено с проверкой существующего значения
+                })),
+                styles: parsed.styles?.map((style: any) => ({
+                    ...style,
+                    countries: style.countries || [],
+                    cities: style.cities || [],
+                    architects: style.architects || [],
+                    photos: style.photos || [],
+                    linkedObjects: style.linkedObjects || [],
+                })) || [],
+                markerAppearanceRules: {
+                    tagIcons: parsed.markerAppearanceRules?.tagIcons ?? {},
+                    styleColors: parsed.markerAppearanceRules?.styleColors ?? {},
+                },
+            };
+            await writeDb(workspace, migrated);
+            return migrated;
+        }
+
+        if (!parsed || parsed.version !== 5 || !Array.isArray(parsed.items) || !parsed.markerAppearanceRules) {
             return emptyDb();
         }
 
         const db: DbFile = {
-            version: 4,
+            version: 5,
             items: parsed.items.map((item: any) => ({
                 ...item,
                 countries: item.countries || [],
                 cities: item.cities || [],
                 completed: item.completed || false,
+                favorite: item.favorite || false, // Добавлено
             })),
             styles: parsed.styles?.map((style: any) => ({
                 ...style,

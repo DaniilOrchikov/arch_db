@@ -1,6 +1,7 @@
 import {useEffect, useMemo, useRef, useState} from "react";
 import type {ArchitectureObject, Photo} from "../lib/types";
 import {Card, CardContent, CardHeader, CardTitle} from "./ui/card";
+import { Star } from "lucide-react";
 import {Badge} from "./ui/badge";
 import {Input} from "./ui/input";
 import {Separator} from "./ui/separator";
@@ -177,12 +178,33 @@ export function ObjectCard({
                         <div className="flex items-center justify-between gap-2">
                             <CardTitle className="truncate text-base">
                                 {item.name.trim() ? item.name : "Без названия"}
-                                {item.completed && ( // Бейдж в заголовке для завершенных объектов
+                                {item.completed && (
                                     <Badge variant="outline" className="ml-2 bg-green-500/10 text-green-600 border-green-300">
                                         ✓
                                     </Badge>
                                 )}
                             </CardTitle>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const updated = { ...item, favorite: !item.favorite };
+                                        onChange(updated);
+                                    }}
+                                    title={item.favorite ? "Убрать из избранного" : "Добавить в избранное"}
+                                >
+                                    <Star
+                                        size={16}
+                                        className={cn(
+                                            item.favorite ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground"
+                                        )}
+                                    />
+                                </Button>
+                            </div>
                         </div>
 
                         <div className="flex items-center justify-between gap-3">
@@ -242,19 +264,40 @@ export function ObjectCard({
                     </div>
                 ) : (
                     <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                aria-label="toggle"
+                            >
+                                <ChevronUp size={18}/>
+                            </Button>
+                            {item.completed && (
+                                <Badge variant="outline" className="ml-2 bg-green-500/10 text-green-600 border-green-300">
+                                    ✓
+                                </Badge>
+                            )}
+                        </div>
                         <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            aria-label="toggle"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const updated = { ...item, favorite: !item.favorite };
+                                onChange(updated);
+                            }}
+                            title={item.favorite ? "Убрать из избранного" : "Добавить в избранное"}
                         >
-                            <ChevronUp size={18}/>
+                            <Star
+                                size={16}
+                                className={cn(
+                                    item.favorite ? "fill-yellow-500 text-yellow-500" : "text-muted-foreground"
+                                )}
+                            />
                         </Button>
-                        {item.completed && ( // Бейдж в заголовке для завершенных объектов
-                            <Badge variant="outline" className="ml-2 bg-green-500/10 text-green-600 border-green-300">
-                                ✓
-                            </Badge>
-                        )}
                     </div>
                 )}
             </CardHeader>

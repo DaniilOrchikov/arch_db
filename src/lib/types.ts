@@ -1,4 +1,3 @@
-// types.ts (дополненный)
 export type Photo =
     | { type: "url"; value: string }
     | { type: "file"; value: string };
@@ -24,6 +23,7 @@ export type ArchitectureObject = {
     photos: Photo[];
     thoughts: string;
     completed: boolean;
+    favorite: boolean;
 };
 
 // Новый тип для стиля

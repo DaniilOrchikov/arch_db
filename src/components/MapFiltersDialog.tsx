@@ -8,6 +8,7 @@ import { MultiValueInput } from "./MultiValueInput";
 import type { MarkerAppearanceRules } from "../lib/types";
 
 import { MarkerColorRulesEditor } from "./MarkerColorRulesEditor";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"; // Добавлен импорт
 
 export type MapFilters = {
     architects: string[];
@@ -16,6 +17,7 @@ export type MapFilters = {
     countries: string[];
     cities: string[];
     radiusKm: string;
+    favorite: "all" | "favorite" | "not_favorite";
 };
 
 export function MapFiltersDialog({
@@ -50,10 +52,10 @@ export function MapFiltersDialog({
         (filters.architects.length ? 1 : 0) +
         (filters.styles.length ? 1 : 0) +
         (filters.tags.length ? 1 : 0) +
-        // Новые фильтры
         (filters.countries.length ? 1 : 0) +
         (filters.cities.length ? 1 : 0) +
-        (filters.radiusKm.trim() ? 1 : 0);
+        (filters.radiusKm.trim() ? 1 : 0) +
+        (filters.favorite !== "all" ? 1 : 0); // Добавлено
 
     const radiusHint = useMemo(() => {
         const t = filters.radiusKm.trim();
@@ -123,6 +125,26 @@ export function MapFiltersDialog({
                             />
                         </div>
 
+                        {/* Фильтр по избранному для карты */}
+                        <div className="grid grid-cols-1 gap-2">
+                            <div className="text-xs font-medium text-muted-foreground">Избранное</div>
+                            <Select
+                                value={filters.favorite}
+                                onValueChange={(value: "all" | "favorite" | "not_favorite") =>
+                                    setFilters({ ...filters, favorite: value })
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Выберите статус избранного" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Все объекты</SelectItem>
+                                    <SelectItem value="favorite">Только избранные</SelectItem>
+                                    <SelectItem value="not_favorite">Только не избранные</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
                         <Separator />
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 items-end">
@@ -151,6 +173,7 @@ export function MapFiltersDialog({
                                             countries: [],
                                             cities: [],
                                             radiusKm: "",
+                                            favorite: "all", // Добавлено
                                         })
                                     }
                                 >

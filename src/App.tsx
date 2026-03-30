@@ -30,7 +30,9 @@ function isFsAccessSupported() {
 }
 
 const DEFAULT_OBJECTS_SORT: SortRule[] = [
-    { id: "sr-2", field: "name", dir: "asc" },
+    { id: "sr-1", field: "countries", dir: "asc" },
+    { id: "sr-2", field: "cities", dir: "asc" },
+    { id: "sr-3", field: "name", dir: "asc" },
 ];
 
 const DEFAULT_OBJECTS_FILTERS: Filters = {
@@ -48,6 +50,7 @@ const DEFAULT_OBJECTS_FILTERS: Filters = {
     yearEndMin: "",
     yearEndMax: "",
     completed: "all",
+    favorite: "all",
 };
 
 const DEFAULT_MAP_FILTERS: MapFilters = {
@@ -57,6 +60,7 @@ const DEFAULT_MAP_FILTERS: MapFilters = {
     countries: [],
     cities: [],
     radiusKm: "",
+    favorite: "all",
 };
 
 export default function App() {
