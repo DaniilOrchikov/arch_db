@@ -110,6 +110,13 @@ body {
   background: hsl(222.2 84% 3.9%);
 }
 
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
+}
+
 /* Material icons в темной теме */
 .dark .material-symbols-rounded {
   color: rgba(255, 255, 255, 0.87);

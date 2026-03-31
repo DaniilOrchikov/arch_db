@@ -10,6 +10,7 @@ import { Button } from "./components/ui/button";
 import { Separator } from "./components/ui/separator";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { GeoGuessrPage } from "./components/GeoGuessrPage"; // Добавить этот импорт
+import { TimelinePage } from "./components/TimelinePage";
 
 
 import type { Filters, SortRule } from "./components/FiltersSortDialog";
@@ -353,6 +354,20 @@ export default function App() {
                         <GeoGuessrPage
                             workspace={workspace}
                             items={db.items}
+                            onOpenObject={(id) => {
+                                setActiveTab("objects");
+                                setOpenId(id);
+                            }}
+                        />
+                    )}
+
+                    {activeTab === "timeline" && (
+                        <TimelinePage
+                            items={db.items}
+                            filters={objectsFilters}
+                            setFilters={setObjectsFilters}
+                            sortRules={objectsSortRules}
+                            setSortRules={setObjectsSortRules}
                             onOpenObject={(id) => {
                                 setActiveTab("objects");
                                 setOpenId(id);

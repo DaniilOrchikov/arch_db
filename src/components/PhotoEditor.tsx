@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "./ui/dial
 type ResolvedPhoto = { src: string; revoke?: () => void };
 
 async function resolvePhoto(workspace: FileSystemDirectoryHandle | null, p: Photo): Promise<ResolvedPhoto> {
-    if (p.type === "url") return { src: p.value };
+    if (p.type === "url") return { src: p.value.trim() };
     if (!workspace) return { src: "" };
     const f = await readWorkspaceFile(workspace, p.value);
     const url = URL.createObjectURL(f);

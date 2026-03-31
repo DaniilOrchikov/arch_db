@@ -1,9 +1,9 @@
 // Sidebar.tsx (обновленный)
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
-import { PanelLeftClose, PanelLeftOpen, Database, Map as MapIcon, Palette, Home, Gamepad2 } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Database, Map as MapIcon, Palette, Home, Gamepad2, History } from "lucide-react";
 
-export type AppTab = "objects" | "map" | "styles" | "geoguessr";
+export type AppTab = "objects" | "map" | "styles" | "geoguessr" | "timeline";
 
 export function Sidebar({
                             collapsed,
@@ -47,6 +47,19 @@ export function Sidebar({
                 >
                     <Database size={16} />
                     {!collapsed && <span>Объекты</span>}
+                </button>
+
+                <button
+                    type="button"
+                    className={cn(
+                        "w-full rounded-md px-3 py-2 text-sm text-left flex items-center gap-2",
+                        activeTab === "timeline" ? "bg-accent text-accent-foreground" : "hover:bg-accent/60"
+                    )}
+                    onClick={() => onChangeTab("timeline")}
+                    title="Хронология объектов"
+                >
+                    <History size={16} />
+                    {!collapsed && <span>Хронология</span>}
                 </button>
 
                 <button

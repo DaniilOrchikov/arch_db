@@ -3,6 +3,7 @@ import type { MarkerAppearanceRules } from "../lib/types";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
+import { Trash2 } from "lucide-react";
 
 type Kind = "tagIcons" | "styleColors";
 
@@ -122,13 +123,13 @@ export function MarkerColorRulesEditor({
 
             <Separator />
 
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
                 {entries.length === 0 ? (
                     <div className="text-sm text-muted-foreground">Правил пока нет.</div>
                 ) : (
                     entries.map(([k, v]) => (
-                        <div key={k} className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
+                        <div key={k} className="flex items-center justify-between gap-2 rounded border px-2 py-1.5">
+                            <div className="flex items-center gap-2 min-w-0">
                                 {kind === "styleColors" ? (
                                     <div style={{ width: 14, height: 14, borderRadius: 9999, background: v as string, border: "1px solid rgba(0,0,0,0.15)" }} />
                                 ) : (
@@ -136,11 +137,11 @@ export function MarkerColorRulesEditor({
                     {v as string}
                   </span>
                                 )}
-                                <div className="text-sm">{k}</div>
-                                <div className="text-xs text-muted-foreground">{String(v)}</div>
+                                <div className="text-sm truncate max-w-[130px]">{k}</div>
+                                <div className="text-xs text-muted-foreground truncate max-w-[110px]">{String(v)}</div>
                             </div>
-                            <Button type="button" variant="secondary" onClick={() => remove(k)}>
-                                Удалить
+                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(k)} aria-label="Удалить правило">
+                                <Trash2 size={14} />
                             </Button>
                         </div>
                     ))

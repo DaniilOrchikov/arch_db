@@ -181,7 +181,7 @@ function escapeHtml(s: string) {
 }
 
 async function resolvePhotoSource(workspace: FileSystemDirectoryHandle | null, photo: Photo): Promise<string> {
-    if (photo.type === "url") return photo.value;
+    if (photo.type === "url") return photo.value.trim();
     if (!workspace) return "";
     const file = await readWorkspaceFile(workspace, photo.value);
     return URL.createObjectURL(file);

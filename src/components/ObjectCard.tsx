@@ -18,7 +18,7 @@ import { Label } from "./ui/label";
 
 
 async function resolveThumb(workspace: FileSystemDirectoryHandle | null, p: Photo): Promise<string> {
-    if (p.type === "url") return p.value;
+    if (p.type === "url") return p.value.trim();
     if (!workspace) return "";
     const f = await readWorkspaceFile(workspace, p.value);
     return URL.createObjectURL(f);
@@ -359,73 +359,70 @@ export function ObjectCard({
                         </div>
                     </div>
 
-                    <div className="rounded-md border bg-muted/20 p-3 space-y-3">
-                        <div className="text-sm font-medium">Классификация объекта</div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                            <MultiValueInput
-                                dense
-                                label="Архитекторы"
-                                placeholder="Начните вводить..."
-                                values={item.architects}
-                                suggestions={architectSuggestions}
-                                onChange={(v) => {
-                                    const updated = { ...item, architects: v };
-                                    const withStatus = updateCompletedStatus(updated);
-                                    onChange(withStatus);
-                                }}
-                            />
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+                        <MultiValueInput
+                            dense
+                            label="Архитекторы"
+                            placeholder="Начните вводить..."
+                            values={item.architects}
+                            suggestions={architectSuggestions}
+                            onChange={(v) => {
+                                const updated = { ...item, architects: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
+                        />
 
-                            <MultiValueInput
-                                dense
-                                label="Стили"
-                                placeholder="Начните вводить..."
-                                values={item.styles}
-                                suggestions={styleSuggestions}
-                                onChange={(v) => {
-                                    const updated = { ...item, styles: v };
-                                    const withStatus = updateCompletedStatus(updated);
-                                    onChange(withStatus);
-                                }}
-                                onItemClick={onStyleClick}
-                            />
+                        <MultiValueInput
+                            dense
+                            label="Стили"
+                            placeholder="Начните вводить..."
+                            values={item.styles}
+                            suggestions={styleSuggestions}
+                            onChange={(v) => {
+                                const updated = { ...item, styles: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
+                            onItemClick={onStyleClick}
+                        />
 
-                            <MultiValueInput
-                                dense
-                                label="Теги"
-                                placeholder="Начните вводить..."
-                                values={item.tags}
-                                suggestions={tagSuggestions}
-                                onChange={(v) => {
-                                    const updated = { ...item, tags: v };
-                                    const withStatus = updateCompletedStatus(updated);
-                                    onChange(withStatus);
-                                }}
-                            />
-                            <MultiValueInput
-                                dense
-                                label="Страна"
-                                placeholder="Начните вводить..."
-                                values={item.countries}
-                                suggestions={countrySuggestions}
-                                onChange={(v) => {
-                                    const updated = { ...item, countries: v };
-                                    const withStatus = updateCompletedStatus(updated);
-                                    onChange(withStatus);
-                                }}
-                            />
-                            <MultiValueInput
-                                dense
-                                label="Город"
-                                placeholder="Начните вводить..."
-                                values={item.cities}
-                                suggestions={citySuggestions}
-                                onChange={(v) => {
-                                    const updated = { ...item, cities: v };
-                                    const withStatus = updateCompletedStatus(updated);
-                                    onChange(withStatus);
-                                }}
-                            />
-                        </div>
+                        <MultiValueInput
+                            dense
+                            label="Теги"
+                            placeholder="Начните вводить..."
+                            values={item.tags}
+                            suggestions={tagSuggestions}
+                            onChange={(v) => {
+                                const updated = { ...item, tags: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
+                        />
+                        <MultiValueInput
+                            dense
+                            label="Страна"
+                            placeholder="Начните вводить..."
+                            values={item.countries}
+                            suggestions={countrySuggestions}
+                            onChange={(v) => {
+                                const updated = { ...item, countries: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
+                        />
+                        <MultiValueInput
+                            dense
+                            label="Город"
+                            placeholder="Начните вводить..."
+                            values={item.cities}
+                            suggestions={citySuggestions}
+                            onChange={(v) => {
+                                const updated = { ...item, cities: v };
+                                const withStatus = updateCompletedStatus(updated);
+                                onChange(withStatus);
+                            }}
+                        />
                     </div>
 
                     <div className="flex justify-end">

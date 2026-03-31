@@ -15,7 +15,7 @@ import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 
 async function resolveThumb(workspace: FileSystemDirectoryHandle | null, p: Photo): Promise<string> {
-    if (p.type === "url") return p.value;
+    if (p.type === "url") return p.value.trim();
     if (!workspace) return "";
     const f = await readWorkspaceFile(workspace, p.value);
     return URL.createObjectURL(f);
@@ -309,12 +309,12 @@ export function StyleCard({
                     {/* Связанные объекты */}
                     <div className="space-y-2">
                         <div className="text-sm font-medium">Объекты этого стиля ({linkedObjects.length})</div>
-                        <div className="space-y-1">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                             {linkedObjects.length > 0 ? (
                                 linkedObjects.map((obj) => (
                                     <div
                                         key={obj.id}
-                                        className="flex items-center gap-3 p-2 rounded-md border hover:bg-accent/50 cursor-pointer group"
+                                        className="flex items-center gap-3 p-2 rounded-md border hover:bg-accent/50 cursor-pointer group min-w-0"
                                         onClick={() => onOpenObject(obj.id)}
                                     >
                                         {/* Миниатюра объекта */}
