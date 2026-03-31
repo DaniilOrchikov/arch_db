@@ -4,7 +4,7 @@ import { ObjectsPage } from "./components/ObjectsPage";
 import { MapPage } from "./components/MapPage";
 import { StylesPage } from "./components/StylesPage"; // Новый импорт
 import type { DbFile } from "./lib/types";
-import { emptyDb, ensureImagesDir, readDb, writeDb, updateStyleRelationships } from "./lib/db";
+import { emptyDb, ensureImagesDir, readDb, writeBackupDb, writeDb, updateStyleRelationships } from "./lib/db";
 import { loadWorkspaceHandle, saveWorkspaceHandle, ensureReadWritePermission } from "./lib/workspace";
 import { Button } from "./components/ui/button";
 import { Separator } from "./components/ui/separator";
@@ -158,6 +158,12 @@ export default function App() {
     // Автоматическое сохранение
     const saveTimer = useRef<number | null>(null);
     const lastSerialized = useRef<string>("");
+    const prevItemIdsRef = useRef<Set<string> | null>(null);
+    const dbRef = useRef(db);
+
+    useEffect(() => {
+        dbRef.current = db;
+    }, [db]);
 
     useEffect(() => {
         if (!workspace) return;
@@ -181,6 +187,35 @@ export default function App() {
             if (saveTimer.current) window.clearTimeout(saveTimer.current);
         };
     }, [db, workspace]);
+
+    useEffect(() => {
+        if (!workspace) {
+            prevItemIdsRef.current = null;
+            return;
+        }
+
+        const currentIds = new Set(db.items.map((item) => item.id));
+        if (prevItemIdsRef.current === null) {
+            prevItemIdsRef.current = currentIds;
+            return;
+        }
+
+        const hasNewObject = Array.from(currentIds).some((id) => !prevItemIdsRef.current?.has(id));
+        prevItemIdsRef.current = currentIds;
+        if (!hasNewObject) return;
+
+        void writeBackupDb(workspace, db, "new-object");
+    }, [db, workspace]);
+
+    useEffect(() => {
+        if (!workspace) return;
+
+        const intervalId = window.setInterval(() => {
+            void writeBackupDb(workspace, dbRef.current, "interval-10m");
+        }, 10 * 60 * 1000);
+
+        return () => window.clearInterval(intervalId);
+    }, [workspace]);
 
     const duplicateNames = useMemo(() => {
         const m = new Map<string, number>();
@@ -301,6 +336,7 @@ export default function App() {
 
                     {activeTab === "map" && (
                         <MapPage
+                            workspace={workspace}
                             items={db.items}
                             onOpenObject={(id) => {
                                 setActiveTab("objects");

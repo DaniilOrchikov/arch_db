@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 
 export const DB_FILENAME = "db.json";
 export const IMAGES_DIRNAME = "images";
+export const BACKUPS_DIRNAME = "backups";
 
 export function emptyMarkerAppearanceRules(): MarkerAppearanceRules {
     return { tagIcons: {}, styleColors: {} };
@@ -80,6 +81,19 @@ export async function readDb(workspace: FileSystemDirectoryHandle): Promise<DbFi
 
 export async function writeDb(workspace: FileSystemDirectoryHandle, db: DbFile) {
     const fileHandle = await workspace.getFileHandle(DB_FILENAME, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(db, null, 2));
+    await writable.close();
+}
+
+function backupStamp() {
+    return new Date().toISOString().replaceAll(":", "-");
+}
+
+export async function writeBackupDb(workspace: FileSystemDirectoryHandle, db: DbFile, reason = "auto") {
+    const backupsDir = await workspace.getDirectoryHandle(BACKUPS_DIRNAME, { create: true });
+    const filename = `db-backup-${backupStamp()}-${reason}.json`;
+    const fileHandle = await backupsDir.getFileHandle(filename, { create: true });
     const writable = await fileHandle.createWritable();
     await writable.write(JSON.stringify(db, null, 2));
     await writable.close();

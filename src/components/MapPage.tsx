@@ -1,12 +1,13 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useMemo, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMapEvents } from "react-leaflet";
-import type { ArchitectureObject, Coordinates, MarkerAppearanceRules } from "../lib/types";
+import type { ArchitectureObject, Coordinates, MarkerAppearanceRules, Photo } from "../lib/types";
 import { Button } from "./ui/button";
 import { cn } from "../lib/utils";
 import { SlidersHorizontal, X } from "lucide-react";
 import { MapFiltersDialog, type MapFilters } from "./MapFiltersDialog";
+import { readWorkspaceFile } from "../lib/photos";
 
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png?url";
 import markerIcon from "leaflet/dist/images/marker-icon.png?url";
@@ -179,7 +180,69 @@ function escapeHtml(s: string) {
     return div.innerHTML;
 }
 
+async function resolvePhotoSource(workspace: FileSystemDirectoryHandle | null, photo: Photo): Promise<string> {
+    if (photo.type === "url") return photo.value;
+    if (!workspace) return "";
+    const file = await readWorkspaceFile(workspace, photo.value);
+    return URL.createObjectURL(file);
+}
+
+function PopupMainImage({ workspace, item }: { workspace: FileSystemDirectoryHandle | null; item: ArchitectureObject }) {
+    const [src, setSrc] = useState("");
+    const [isBlob, setIsBlob] = useState(false);
+
+    useEffect(() => {
+        let alive = true;
+
+        (async () => {
+            const firstPhoto = item.photos[0];
+            if (!firstPhoto) {
+                setSrc("");
+                setIsBlob(false);
+                return;
+            }
+
+            try {
+                const resolvedSrc = await resolvePhotoSource(workspace, firstPhoto);
+                if (!alive) {
+                    if (resolvedSrc.startsWith("blob:")) URL.revokeObjectURL(resolvedSrc);
+                    return;
+                }
+                setSrc(resolvedSrc);
+                setIsBlob(resolvedSrc.startsWith("blob:"));
+            } catch {
+                if (alive) {
+                    setSrc("");
+                    setIsBlob(false);
+                }
+            }
+        })();
+
+        return () => {
+            alive = false;
+        };
+    }, [workspace, item.id, item.photos]);
+
+    useEffect(() => {
+        return () => {
+            if (isBlob && src.startsWith("blob:")) URL.revokeObjectURL(src);
+        };
+    }, [isBlob, src]);
+
+    if (!src) return null;
+
+    return (
+        <img
+            src={src}
+            alt={item.name || "Фото объекта"}
+            className="h-24 w-full rounded-md object-cover border"
+            loading="lazy"
+        />
+    );
+}
+
 export function MapPage({
+                            workspace,
                             items,
                             onOpenObject,
                             markerAppearanceRules,
@@ -188,6 +251,7 @@ export function MapPage({
                             filters,
                             setFilters,
                         }: {
+    workspace: FileSystemDirectoryHandle | null;
     items: ArchitectureObject[];
     onOpenObject?: (id: string) => void;
     markerAppearanceRules: MarkerAppearanceRules;
@@ -329,6 +393,7 @@ export function MapPage({
                             >
                                 <Popup>
                                     <div className="space-y-1">
+                                        <PopupMainImage workspace={workspace} item={it} />
                                         <div className="font-medium">{it.name || "Без названия"}</div>
                                         {it.address?.trim() && <div className="text-xs text-muted-foreground">{it.address}</div>}
 

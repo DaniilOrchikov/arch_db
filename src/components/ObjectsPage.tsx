@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ArchitectureObject } from "../lib/types";
 import { Button } from "./ui/button";
 import { ObjectCard } from "./ObjectCard";
@@ -122,6 +122,8 @@ export function ObjectsPage({
     setSortRules: (next: SortRule[]) => void;
     onOpenStyle?: (styleName: string) => void; // Добавлено: обработчик открытия стиля
 }) {
+    const cardRefs = useRef(new Map<string, HTMLDivElement>());
+
     const tagSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.tags)), [items]);
     const architectSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.architects)), [items]);
     const styleSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.styles)), [items]);
@@ -199,10 +201,11 @@ export function ObjectsPage({
 
         return multiSort(filtered, sortRules);
     }, [items, filters, sortRules]);
-    useMemo(() => {
+    const collapsedItems = useMemo(() => {
         if (!openItem) return filteredSorted;
         return filteredSorted.filter((x) => x.id !== openItem.id);
     }, [filteredSorted, openItem]);
+
     const activeFiltersCount =
         (filters.name.trim() ? 1 : 0) +
         (filters.address.trim() ? 1 : 0) +
@@ -218,6 +221,13 @@ export function ObjectsPage({
         (filters.yearEndMin.trim() ? 1 : 0) +
         (filters.yearEndMax.trim() ? 1 : 0) +
         (filters.completed !== "all" ? 1 : 0); // Добавлено
+
+    useEffect(() => {
+        if (!openId) return;
+        const node = cardRefs.current.get(openId);
+        if (!node) return;
+        node.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, [openId, activeFiltersCount, sortRules, filters]);
 
     return (
         <div className="space-y-4">
@@ -285,13 +295,57 @@ export function ObjectsPage({
 
             {/* Сетка карточек */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                {filteredSorted.map((it) => {
+                {openItem && (
+                    <div
+                        ref={(node) => {
+                            if (node) {
+                                cardRefs.current.set(openItem.id, node);
+                            } else {
+                                cardRefs.current.delete(openItem.id);
+                            }
+                        }}
+                        key={openItem.id}
+                        className="col-span-1 sm:col-span-2 xl:col-span-3"
+                    >
+                        <ObjectCard
+                            workspace={workspace}
+                            item={openItem}
+                            open={true}
+                            onToggle={() => setOpenId(null)}
+                            onChange={(next) => onChangeItems(items.map((x) => (x.id === openItem.id ? next : x)))}
+                            onDelete={() => {
+                                const next = items.filter((x) => x.id !== openItem.id);
+                                onChangeItems(next);
+                                setOpenId(null);
+                            }}
+                            tagSuggestions={tagSuggestions}
+                            architectSuggestions={architectSuggestions}
+                            styleSuggestions={styleSuggestions}
+                            countrySuggestions={countrySuggestions}
+                            citySuggestions={citySuggestions}
+                            hasDuplicateName={(() => {
+                                const key = norm(openItem.name);
+                                return key ? (dupMap.get(key) ?? 0) > 1 : false;
+                            })()}
+                            onStyleClick={onOpenStyle}
+                        />
+                    </div>
+                )}
+
+                {collapsedItems.map((it) => {
                     const isOpen = openId === it.id;
                     const key = norm(it.name);
                     const hasDuplicateName = key ? (dupMap.get(key) ?? 0) > 1 : false;
 
                     return (
                         <div
+                            ref={(node) => {
+                                if (node) {
+                                    cardRefs.current.set(it.id, node);
+                                } else {
+                                    cardRefs.current.delete(it.id);
+                                }
+                            }}
                             key={it.id}
                             className={cn(
                                 // в раскрытом состоянии карточка занимает всю строку сетки
