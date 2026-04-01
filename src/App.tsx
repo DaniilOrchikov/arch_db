@@ -363,11 +363,13 @@ export default function App() {
 
                     {activeTab === "timeline" && (
                         <TimelinePage
+                            workspace={workspace}
                             items={db.items}
                             filters={objectsFilters}
                             setFilters={setObjectsFilters}
-                            sortRules={objectsSortRules}
                             setSortRules={setObjectsSortRules}
+                            markerAppearanceRules={db.markerAppearanceRules ?? { tagIcons: {}, styleColors: {} }}
+                            onChangeMarkerAppearanceRules={(next) => setDb({ ...db, markerAppearanceRules: next })}
                             onOpenObject={(id) => {
                                 setActiveTab("objects");
                                 setOpenId(id);
