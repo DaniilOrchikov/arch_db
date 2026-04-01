@@ -15,7 +15,7 @@ import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 
 async function resolveThumb(workspace: FileSystemDirectoryHandle | null, p: Photo): Promise<string> {
-    if (p.type === "url") return p.value;
+    if (p.type === "url") return p.value.trim();
     if (!workspace) return "";
     const f = await readWorkspaceFile(workspace, p.value);
     return URL.createObjectURL(f);
@@ -107,9 +107,6 @@ export function StyleCard({
     linkedObjects: ArchitectureObject[];
     onOpenObject: (id: string) => void;
 }) {
-    const [localOpen, setLocalOpen] = useState(open);
-    useEffect(() => setLocalOpen(open), [open]);
-
     const [thumb, setThumb] = useState<string>("");
     const prevThumbRef = useRef<string>("");
 
@@ -168,11 +165,11 @@ export function StyleCard({
             <CardHeader
                 className={cn(
                     "cursor-pointer select-none p-3",
-                    localOpen && "pb-2"
+                    open && "pb-2"
                 )}
                 onClick={onToggle}
             >
-                {!localOpen ? (
+                {!open ? (
                     // Свернутое состояние
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
@@ -238,7 +235,7 @@ export function StyleCard({
                 )}
             </CardHeader>
 
-            {localOpen && (
+            {open && (
                 <CardContent className="space-y-4">
                     {/* Название стиля */}
                     <div className="space-y-1">
@@ -312,12 +309,12 @@ export function StyleCard({
                     {/* Связанные объекты */}
                     <div className="space-y-2">
                         <div className="text-sm font-medium">Объекты этого стиля ({linkedObjects.length})</div>
-                        <div className="space-y-1">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
                             {linkedObjects.length > 0 ? (
                                 linkedObjects.map((obj) => (
                                     <div
                                         key={obj.id}
-                                        className="flex items-center gap-3 p-2 rounded-md border hover:bg-accent/50 cursor-pointer group"
+                                        className="flex items-center gap-3 p-2 rounded-md border hover:bg-accent/50 cursor-pointer group min-w-0"
                                         onClick={() => onOpenObject(obj.id)}
                                     >
                                         {/* Миниатюра объекта */}

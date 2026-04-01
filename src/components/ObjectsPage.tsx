@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ArchitectureObject } from "../lib/types";
 import { Button } from "./ui/button";
 import { ObjectCard } from "./ObjectCard";
@@ -122,6 +122,8 @@ export function ObjectsPage({
     setSortRules: (next: SortRule[]) => void;
     onOpenStyle?: (styleName: string) => void; // Добавлено: обработчик открытия стиля
 }) {
+    const cardRefs = useRef(new Map<string, HTMLDivElement>());
+
     const tagSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.tags)), [items]);
     const architectSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.architects)), [items]);
     const styleSuggestions = useMemo(() => uniqSorted(items.flatMap((i) => i.styles)), [items]);
@@ -139,8 +141,6 @@ export function ObjectsPage({
     }, [items]);
 
     const [filtersOpen, setFiltersOpen] = useState(false);
-
-    const openItem = openId ? items.find((x) => x.id === openId) ?? null : null;
 
     const filteredSorted = useMemo(() => {
         const ysMin = toNumOrNull(filters.yearStartMin);
@@ -199,10 +199,6 @@ export function ObjectsPage({
 
         return multiSort(filtered, sortRules);
     }, [items, filters, sortRules]);
-    useMemo(() => {
-        if (!openItem) return filteredSorted;
-        return filteredSorted.filter((x) => x.id !== openItem.id);
-    }, [filteredSorted, openItem]);
     const activeFiltersCount =
         (filters.name.trim() ? 1 : 0) +
         (filters.address.trim() ? 1 : 0) +
@@ -218,6 +214,13 @@ export function ObjectsPage({
         (filters.yearEndMin.trim() ? 1 : 0) +
         (filters.yearEndMax.trim() ? 1 : 0) +
         (filters.completed !== "all" ? 1 : 0); // Добавлено
+
+    useEffect(() => {
+        if (!openId) return;
+        const node = cardRefs.current.get(openId);
+        if (!node) return;
+        node.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, [openId, filteredSorted]);
 
     return (
         <div className="space-y-4">
@@ -292,6 +295,13 @@ export function ObjectsPage({
 
                     return (
                         <div
+                            ref={(node) => {
+                                if (node) {
+                                    cardRefs.current.set(it.id, node);
+                                } else {
+                                    cardRefs.current.delete(it.id);
+                                }
+                            }}
                             key={it.id}
                             className={cn(
                                 // в раскрытом состоянии карточка занимает всю строку сетки

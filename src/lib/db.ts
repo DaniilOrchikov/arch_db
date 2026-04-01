@@ -1,7 +1,9 @@
-import type {ArchitectureObject, DbFile, MarkerAppearanceRules, Style} from "./types";
+import type { ArchitectureObject, DbFile, MarkerAppearanceRules, Style } from "./types";
+import { v4 as uuidv4 } from "uuid";
 
 export const DB_FILENAME = "db.json";
 export const IMAGES_DIRNAME = "images";
+export const BACKUPS_DIRNAME = "backups";
 
 export function emptyMarkerAppearanceRules(): MarkerAppearanceRules {
     return { tagIcons: {}, styleColors: {} };
@@ -24,7 +26,7 @@ export function emptyStyle(): Style {
 
 export function emptyDb(): DbFile {
     return {
-        version: 5,
+        version: 4,
         items: [],
         styles: [],
         markerAppearanceRules: emptyMarkerAppearanceRules()
@@ -40,113 +42,28 @@ export async function readDb(workspace: FileSystemDirectoryHandle): Promise<DbFi
         const fileHandle = await workspace.getFileHandle(DB_FILENAME);
         const file = await fileHandle.getFile();
         const text = await file.text();
-        const parsed = JSON.parse(text) as any;
+        const parsed = JSON.parse(text) as Partial<DbFile>;
 
-        // v1 -> v5
-        if (parsed && parsed.version === 1 && Array.isArray(parsed.items)) {
-            const migrated: DbFile = {
-                version: 5,
-                items: parsed.items.map((item: any) => ({
-                    ...item,
-                    countries: [],
-                    cities: [],
-                    completed: false,
-                    favorite: false, // Добавлено
-                })),
-                styles: [],
-                markerAppearanceRules: emptyMarkerAppearanceRules(),
-            };
-            await writeDb(workspace, migrated);
-            return migrated;
-        }
-
-        // v2 -> v5
-        if (parsed && parsed.version === 2 && Array.isArray(parsed.items)) {
-            const migrated: DbFile = {
-                version: 5,
-                items: parsed.items.map((item: any) => ({
-                    ...item,
-                    countries: item.countries || [],
-                    cities: item.cities || [],
-                    completed: item.completed || false,
-                    favorite: false, // Добавлено
-                })),
-                styles: [],
-                markerAppearanceRules: {
-                    tagIcons: {},
-                    styleColors: parsed.markerColorRules?.styles ?? {},
-                },
-            };
-            await writeDb(workspace, migrated);
-            return migrated;
-        }
-
-        // v3 -> v5 (добавляем styles и favorite)
-        if (parsed && parsed.version === 3 && Array.isArray(parsed.items)) {
-            const migrated: DbFile = {
-                version: 5,
-                items: parsed.items.map((item: any) => ({
-                    ...item,
-                    countries: item.countries || [],
-                    cities: item.cities || [],
-                    completed: item.completed || false,
-                    favorite: false, // Добавлено
-                })),
-                styles: parsed.styles || [],
-                markerAppearanceRules: {
-                    tagIcons: parsed.markerAppearanceRules?.tagIcons ?? {},
-                    styleColors: parsed.markerAppearanceRules?.styleColors ?? {},
-                },
-            };
-            await writeDb(workspace, migrated);
-            return migrated;
-        }
-
-        // v4 -> v5 (добавляем favorite)
-        if (parsed && parsed.version === 4 && Array.isArray(parsed.items)) {
-            const migrated: DbFile = {
-                version: 5,
-                items: parsed.items.map((item: any) => ({
-                    ...item,
-                    favorite: item.favorite || false, // Добавлено с проверкой существующего значения
-                })),
-                styles: parsed.styles?.map((style: any) => ({
-                    ...style,
-                    countries: style.countries || [],
-                    cities: style.cities || [],
-                    architects: style.architects || [],
-                    photos: style.photos || [],
-                    linkedObjects: style.linkedObjects || [],
-                })) || [],
-                markerAppearanceRules: {
-                    tagIcons: parsed.markerAppearanceRules?.tagIcons ?? {},
-                    styleColors: parsed.markerAppearanceRules?.styleColors ?? {},
-                },
-            };
-            await writeDb(workspace, migrated);
-            return migrated;
-        }
-
-        if (!parsed || parsed.version !== 5 || !Array.isArray(parsed.items) || !parsed.markerAppearanceRules) {
+        if (!parsed || parsed.version !== 4 || !Array.isArray(parsed.items) || !parsed.markerAppearanceRules) {
             return emptyDb();
         }
 
         const db: DbFile = {
-            version: 5,
-            items: parsed.items.map((item: any) => ({
+            version: 4,
+            items: parsed.items.map((item) => ({
                 ...item,
-                countries: item.countries || [],
-                cities: item.cities || [],
-                completed: item.completed || false,
-                favorite: item.favorite || false, // Добавлено
+                countries: item.countries ?? [],
+                cities: item.cities ?? [],
+                completed: item.completed ?? false,
+                favorite: item.favorite ?? false,
             })),
-            styles: parsed.styles?.map((style: any) => ({
+            styles: parsed.styles?.map((style) => ({
                 ...style,
-                countries: style.countries || [],
-                cities: style.cities || [],
-                architects: style.architects || [],
-                photos: style.photos || [],
-                linkedObjects: style.linkedObjects || [],
+                countries: style.countries ?? [],
+                cities: style.cities ?? [],
+                architects: style.architects ?? [],
+                photos: style.photos ?? [],
+                linkedObjects: style.linkedObjects ?? [],
             })) || [],
             markerAppearanceRules: {
                 tagIcons: parsed.markerAppearanceRules.tagIcons ?? {},
@@ -164,6 +81,19 @@ export async function readDb(workspace: FileSystemDirectoryHandle): Promise<DbFi
 
 export async function writeDb(workspace: FileSystemDirectoryHandle, db: DbFile) {
     const fileHandle = await workspace.getFileHandle(DB_FILENAME, { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(JSON.stringify(db, null, 2));
+    await writable.close();
+}
+
+function backupStamp() {
+    return new Date().toISOString().replaceAll(":", "-");
+}
+
+export async function writeBackupDb(workspace: FileSystemDirectoryHandle, db: DbFile, reason = "auto") {
+    const backupsDir = await workspace.getDirectoryHandle(BACKUPS_DIRNAME, { create: true });
+    const filename = `db-backup-${backupStamp()}-${reason}.json`;
+    const fileHandle = await backupsDir.getFileHandle(filename, { create: true });
     const writable = await fileHandle.createWritable();
     await writable.write(JSON.stringify(db, null, 2));
     await writable.close();
@@ -190,7 +120,7 @@ export function updateStyleRelationships(items: ArchitectureObject[], styles: St
             if (!styleMap.has(styleName)) {
                 // Создаем новый стиль, если его нет
                 styleMap.set(styleName, {
-                    id: `style-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                    id: uuidv4(),
                     name: styleName,
                     countries: [],
                     cities: [],

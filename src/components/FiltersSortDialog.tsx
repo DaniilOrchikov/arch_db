@@ -30,6 +30,7 @@ import {
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { v4 as uuidv4 } from "uuid";
 
 export type SortField = "name" | "yearStart" | "yearEnd" | "countries" | "cities" | "styles" | "tags";
 export type SortRule = { id: string; field: SortField; dir: "asc" | "desc" };
@@ -63,6 +64,26 @@ function fieldLabel(f: SortField) {
     if (f === "cities") return "Город";
     if (f === "styles") return "Стиль";
     return "Тег";
+}
+
+function buildEmptyFilters(): Filters {
+    return {
+        name: "",
+        address: "",
+        description: "",
+        thoughts: "",
+        architects: [],
+        styles: [],
+        tags: [],
+        countries: [],
+        cities: [],
+        yearStartMin: "",
+        yearStartMax: "",
+        yearEndMin: "",
+        yearEndMax: "",
+        completed: "all",
+        favorite: "all",
+    };
 }
 
 function SortableRuleRow({
@@ -160,7 +181,7 @@ export function FiltersSortDialog({
     );
 
     function addSortRule(field: SortField) {
-        const id = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+        const id = uuidv4();
         setSortRules([...sortRules, { id, field, dir: "asc" }]);
     }
 
@@ -192,6 +213,7 @@ export function FiltersSortDialog({
         (filters.yearEndMax.trim() ? 1 : 0) +
         (filters.completed !== "all" ? 1 : 0) +
         (filters.favorite !== "all" ? 1 : 0);
+    const activeSortCount = sortRules.length;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -204,6 +226,21 @@ export function FiltersSortDialog({
                 </DialogHeader>
 
                 <div className="space-y-5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/30 p-2">
+                        <div className="text-xs text-muted-foreground">
+                            Активные фильтры: <span className="font-medium text-foreground">{activeFiltersCount}</span> ·
+                            Правил сортировки: <span className="font-medium text-foreground">{activeSortCount}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => setFilters(buildEmptyFilters())}>
+                                Сбросить фильтры
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => setSortRules([])}>
+                                Очистить сортировку
+                            </Button>
+                        </div>
+                    </div>
+
                     {/* ФИЛЬТРЫ */}
                     <div className="space-y-3">
                         <div className="text-sm font-medium">Фильтры</div>

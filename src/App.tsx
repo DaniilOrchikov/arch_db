@@ -4,12 +4,13 @@ import { ObjectsPage } from "./components/ObjectsPage";
 import { MapPage } from "./components/MapPage";
 import { StylesPage } from "./components/StylesPage"; // Новый импорт
 import type { DbFile } from "./lib/types";
-import { emptyDb, ensureImagesDir, readDb, writeDb, updateStyleRelationships } from "./lib/db";
+import { emptyDb, ensureImagesDir, readDb, writeBackupDb, writeDb, updateStyleRelationships } from "./lib/db";
 import { loadWorkspaceHandle, saveWorkspaceHandle, ensureReadWritePermission } from "./lib/workspace";
 import { Button } from "./components/ui/button";
 import { Separator } from "./components/ui/separator";
 import { ThemeToggle } from "./components/ThemeToggle";
 import { GeoGuessrPage } from "./components/GeoGuessrPage"; // Добавить этот импорт
+import { TimelinePage } from "./components/TimelinePage";
 
 
 import type { Filters, SortRule } from "./components/FiltersSortDialog";
@@ -28,6 +29,10 @@ import {
 function isFsAccessSupported() {
     return typeof window !== "undefined" && "showDirectoryPicker" in window;
 }
+
+type DirectoryPickerWindow = Window & {
+    showDirectoryPicker: (options?: { mode?: "read" | "readwrite" }) => Promise<FileSystemDirectoryHandle>;
+};
 
 const DEFAULT_OBJECTS_SORT: SortRule[] = [
     { id: "sr-1", field: "countries", dir: "asc" },
@@ -154,6 +159,12 @@ export default function App() {
     // Автоматическое сохранение
     const saveTimer = useRef<number | null>(null);
     const lastSerialized = useRef<string>("");
+    const prevItemIdsRef = useRef<Set<string> | null>(null);
+    const dbRef = useRef(db);
+
+    useEffect(() => {
+        dbRef.current = db;
+    }, [db]);
 
     useEffect(() => {
         if (!workspace) return;
@@ -162,7 +173,6 @@ export default function App() {
         if (serialized === lastSerialized.current) return;
 
         if (saveTimer.current) window.clearTimeout(saveTimer.current);
-        setStatus({ kind: "saving", message: "Сохранение..." });
 
         saveTimer.current = window.setTimeout(async () => {
             try {
@@ -179,13 +189,34 @@ export default function App() {
         };
     }, [db, workspace]);
 
-    // Обновление связей стилей при изменении объектов
     useEffect(() => {
-        const updatedStyles = updateStyleRelationships(db.items, db.styles);
-        if (JSON.stringify(updatedStyles) !== JSON.stringify(db.styles)) {
-            setDb(prev => ({ ...prev, styles: updatedStyles }));
+        if (!workspace) {
+            prevItemIdsRef.current = null;
+            return;
         }
-    }, [db.items]);
+
+        const currentIds = new Set(db.items.map((item) => item.id));
+        if (prevItemIdsRef.current === null) {
+            prevItemIdsRef.current = currentIds;
+            return;
+        }
+
+        const hasNewObject = Array.from(currentIds).some((id) => !prevItemIdsRef.current?.has(id));
+        prevItemIdsRef.current = currentIds;
+        if (!hasNewObject) return;
+
+        void writeBackupDb(workspace, db, "new-object");
+    }, [db, workspace]);
+
+    useEffect(() => {
+        if (!workspace) return;
+
+        const intervalId = window.setInterval(() => {
+            void writeBackupDb(workspace, dbRef.current, "interval-10m");
+        }, 10 * 60 * 1000);
+
+        return () => window.clearInterval(intervalId);
+    }, [workspace]);
 
     const duplicateNames = useMemo(() => {
         const m = new Map<string, number>();
@@ -237,7 +268,7 @@ export default function App() {
                                 variant="outline"
                                 onClick={async () => {
                                     if (!isFsAccessSupported()) return;
-                                    const h = await (window as any).showDirectoryPicker({ mode: "readwrite" });
+                                    const h = await (window as unknown as DirectoryPickerWindow).showDirectoryPicker({ mode: "readwrite" });
                                     const ok = await ensureReadWritePermission(h);
                                     if (!ok) return;
 
@@ -277,7 +308,10 @@ export default function App() {
                             items={db.items}
                             openId={openId}
                             setOpenId={setOpenId}
-                            onChangeItems={(next) => setDb({ ...db, items: next })}
+                            onChangeItems={(next) => {
+                                const updatedStyles = updateStyleRelationships(next, db.styles);
+                                setDb({ ...db, items: next, styles: updatedStyles });
+                            }}
                             filters={objectsFilters}
                             setFilters={setObjectsFilters}
                             sortRules={objectsSortRules}
@@ -303,6 +337,7 @@ export default function App() {
 
                     {activeTab === "map" && (
                         <MapPage
+                            workspace={workspace}
                             items={db.items}
                             onOpenObject={(id) => {
                                 setActiveTab("objects");
@@ -319,6 +354,22 @@ export default function App() {
                         <GeoGuessrPage
                             workspace={workspace}
                             items={db.items}
+                            onOpenObject={(id) => {
+                                setActiveTab("objects");
+                                setOpenId(id);
+                            }}
+                        />
+                    )}
+
+                    {activeTab === "timeline" && (
+                        <TimelinePage
+                            workspace={workspace}
+                            items={db.items}
+                            filters={objectsFilters}
+                            setFilters={setObjectsFilters}
+                            setSortRules={setObjectsSortRules}
+                            markerAppearanceRules={db.markerAppearanceRules ?? { tagIcons: {}, styleColors: {} }}
+                            onChangeMarkerAppearanceRules={(next) => setDb({ ...db, markerAppearanceRules: next })}
                             onOpenObject={(id) => {
                                 setActiveTab("objects");
                                 setOpenId(id);

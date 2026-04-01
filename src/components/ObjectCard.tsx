@@ -18,7 +18,7 @@ import { Label } from "./ui/label";
 
 
 async function resolveThumb(workspace: FileSystemDirectoryHandle | null, p: Photo): Promise<string> {
-    if (p.type === "url") return p.value;
+    if (p.type === "url") return p.value.trim();
     if (!workspace) return "";
     const f = await readWorkspaceFile(workspace, p.value);
     return URL.createObjectURL(f);
@@ -92,9 +92,6 @@ export function ObjectCard({
     const titleIsEmpty = !item.name.trim();
     const titleError = isDuplicate ? "Название дублируется (проверьте другие карточки)." : null;
 
-    const [localOpen, setLocalOpen] = useState(open);
-    useEffect(() => setLocalOpen(open), [open]);
-
     const [thumb, setThumb] = useState<string>("");
     const prevThumbRef = useRef<string>("");
 
@@ -165,14 +162,13 @@ export function ObjectCard({
             <CardHeader
                 className={cn(
                     "cursor-pointer select-none p-3",
-                    localOpen && "pb-2"
+                    open && "pb-2"
                 )}
                 onClick={() => {
-                    setLocalOpen(!localOpen);
                     onToggle();
                 }}
             >
-                {!localOpen ? (
+                {!open ? (
                     // Свернутое состояние
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between gap-2">
@@ -302,7 +298,7 @@ export function ObjectCard({
                 )}
             </CardHeader>
 
-            {localOpen && (
+            {open && (
                 <CardContent className="space-y-4">
                     {/* Компактный блок: название + годы */}
                     <div className="grid grid-cols-1 md:grid-cols-6 gap-3 items-start">
@@ -388,7 +384,7 @@ export function ObjectCard({
                                 const withStatus = updateCompletedStatus(updated);
                                 onChange(withStatus);
                             }}
-                            onItemClick={onStyleClick} // Добавлено: передаем обработчик клика
+                            onItemClick={onStyleClick}
                         />
 
                         <MultiValueInput
