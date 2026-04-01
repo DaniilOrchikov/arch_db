@@ -132,7 +132,7 @@ export function TimelinePage({
     const [zoomIndex, setZoomIndex] = useState(3);
     const [startYear, setStartYear] = useState(1700);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
-    const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+    const [hoverPos, setHoverPos] = useState<{ x: number; y: number; place: "top" | "bottom" } | null>(null);
     const [styleKey, setStyleKey] = useState("");
     const [styleColor, setStyleColor] = useState("#2563eb");
 
@@ -321,7 +321,7 @@ export function TimelinePage({
             </div>
 
             <div className="rounded-md border bg-card h-[calc(100vh-230px)] flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-auto relative px-3 pt-3">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden relative px-3 pt-3">
                     <div className="relative" style={{ height: `${contentHeight}px` }}>
                         {yearTicks.map((year) => {
                             const left = ((year - startYear) / spanYears) * 100;
@@ -333,19 +333,29 @@ export function TimelinePage({
                         })}
 
                         {timelineItems.map((item) => {
-                            const left = ((item.start - startYear) / spanYears) * 100;
-                            const width = Math.max(((item.end - item.start) / spanYears) * 100, 4);
+                            const visStart = Math.max(item.start, startYear);
+                            const visEnd = Math.min(item.end, endYear);
+                            const left = ((visStart - startYear) / spanYears) * 100;
+                            const width = Math.max(((visEnd - visStart) / spanYears) * 100, 2);
                             const color = pickMarkerColor(item, markerAppearanceRules);
+                            const rowHeight = 42;
+                            const axisReserve = 18;
                             return (
                                 <button
                                     key={item.id}
                                     type="button"
                                     onMouseEnter={(e) => {
                                         setHoveredId(item.id);
-                                        const rect = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect();
+                                        const parent = e.currentTarget.parentElement as HTMLElement;
+                                        const rect = parent.getBoundingClientRect();
+                                        const cardRect = e.currentTarget.getBoundingClientRect();
+                                        const centerX = cardRect.left - rect.left + cardRect.width / 2;
+                                        const cardTop = cardRect.top - rect.top;
+                                        const place = cardTop < 140 ? "bottom" : "top";
                                         setHoverPos({
-                                            x: e.currentTarget.getBoundingClientRect().left - rect.left + e.currentTarget.clientWidth / 2,
-                                            y: e.currentTarget.getBoundingClientRect().top - rect.top,
+                                            x: Math.min(Math.max(centerX, 140), Math.max(rect.width - 140, 140)),
+                                            y: cardTop,
+                                            place,
                                         });
                                     }}
                                     onMouseLeave={() => {
@@ -357,7 +367,7 @@ export function TimelinePage({
                                     style={{
                                         left: `${left}%`,
                                         width: `${Math.min(width, 35)}%`,
-                                        top: `${item.row * 46 + 10}px`,
+                                        bottom: `${axisReserve + item.row * rowHeight}px`,
                                         background: color,
                                         color: getContrastTextColor(color),
                                     }}
@@ -369,8 +379,12 @@ export function TimelinePage({
 
                         {visibleHovered && hoverPos && (
                             <div
-                                className="absolute z-20 rounded-md border bg-background p-2 shadow-xl -translate-x-1/2 -translate-y-full pointer-events-none"
-                                style={{ left: hoverPos.x, top: hoverPos.y - 8 }}
+                                className="absolute z-20 rounded-md border bg-background p-2 shadow-xl -translate-x-1/2 pointer-events-none"
+                                style={{
+                                    left: hoverPos.x,
+                                    top: hoverPos.place === "top" ? hoverPos.y - 8 : hoverPos.y + 40,
+                                    transform: hoverPos.place === "top" ? "translate(-50%, -100%)" : "translate(-50%, 0)",
+                                }}
                             >
                                 <TimelineTooltip workspace={workspace} item={visibleHovered} />
                             </div>
